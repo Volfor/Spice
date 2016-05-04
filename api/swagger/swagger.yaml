@@ -1,0 +1,257 @@
+swagger: '2.0'
+
+info:
+  version: "0.0.1"
+  title: Spice
+  description: Сatalog of astronomical objects.
+    
+host: localhost:10010
+basePath: /
+schemes:
+  - http
+
+consumes:
+  - application/json
+produces:
+  - application/json
+  
+
+## Cross-request parameters
+
+parameters:
+  constellationIdParam:
+    in: path
+    name: constellationId
+    description: ID of the constellation to operate with.
+    required: true
+    type: integer
+    format: int64
+    
+  
+## Requests
+
+paths:
+
+  #Celestail Objects
+  /objects:
+    x-swagger-router-controller: objects
+    get:
+      operationId: listObjects
+      description: |
+        Gets all objects available in catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/CelestialObject"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+
+  #Constellations
+  /objects/constellations:
+    x-swagger-router-controller: constellations
+    get:
+      operationId: listConstellations
+      description: |
+        Gets all constellations from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Constellation"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    post:
+      operationId: createConstellation
+      description: |
+        Creates a new constellation.
+      parameters:
+        - in: body
+          name: constellation
+          description: The constellation to create.
+          required: true
+          schema:
+            $ref: "#/definitions/Constellation"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Constellation"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"            
+  /objects/constellations/{constellationId}:
+    x-swagger-router-controller: constellations
+    parameters:
+      - $ref: "#/parameters/constellationIdParam"
+    get:
+      operationId: getConstellation
+      description: |
+        Gets a constellation with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Constellation"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+            
+  #Stars
+  /objects/stars:
+    x-swagger-router-controller: stars
+    get:
+      operationId: listStars
+      description: |
+        Gets all stars from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Star"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    post:
+      operationId: createStar
+      description: |
+        Creates a new star.
+      parameters:
+        - in: body
+          name: star
+          description: The star to create.
+          required: true
+          schema:
+            $ref: "#/definitions/Star"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Star"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"         
+  /swagger:
+    x-swagger-pipe: swagger_raw
+
+
+## Data classes
+
+definitions:
+  CelestialObject:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: Unique object identifier.
+      name:
+        type: string
+        description: Object name.
+      discoverer:
+        type: string
+        description: Discoverer of the object.
+      discovery_date:
+        type: string
+        format: date
+        description: Discovery date of the object.
+      discovery_place:
+        type: string
+        description: Discovery place of the object.
+      age:
+        type: number
+        format: double
+        description: Age of the object.
+      volume:
+        type: number
+        format: double
+        description: Volume of the object.
+      mass:
+        type: number
+        format: double
+        description: Mass of the object.
+      radius:
+        type: number
+        format: double
+        description: Radius of the object.  
+      surface_area:
+        type: number
+        format: double
+        description: Surface area of the object.
+      mean_density:
+        type: number
+        format: double
+        description: Mean density of the object.  
+      whose_satellite:
+        type: integer
+        description: Identifier of the object around which it rotates.
+  Constellation:
+    type: object
+    allOf:
+      - $ref: '#/definitions/CelestialObject' # Constellation has all properties of a CelestialObject
+      - properties: # extra properties only for constellation
+          limits:
+            type: string
+            description: Limits of the constellation.
+          hill_sphere:
+            type: string
+            description: Hill sphere of the constellation.
+          stars:
+            type: array
+            items:
+              $ref: "#/definitions/Star"
+  Star:
+    type: object
+    allOf:
+      - $ref: "#/definitions/CelestialObject"
+      - properties:
+          right_ascension:
+            type: number
+            format: double
+            description: Right ascension of the star.
+          declination:
+            type: number
+            format: double
+            description: Declination of the star.
+          apparent_magnitude:
+            type: number
+            format: double
+            description: Apparent magnitude of the star.
+          distance:
+            type: number
+            format: double
+            description: Distance from star to Earth.
+          radial_velocity:
+            type: number
+            format: double
+            description: Radial velocity of the star.
+          luminosity:
+            type: number
+            format: double
+            description: Luminosity of the star.
+          effective_temperature:
+            type: number
+            format: double
+            description: Effective temperature of the star.
+          constellation_id:
+            type: integer
+            description: Identifier of the constellation.          
+  ErrorResponse:
+    required:
+      - message
+    properties:
+      message:
+        type: string
