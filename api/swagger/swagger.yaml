@@ -26,7 +26,70 @@ parameters:
     required: true
     type: integer
     format: int64
-    
+  starIdParam:
+    in: path
+    name: starId
+    description: ID of the star to operate with.
+    required: true
+    type: integer
+    format: int64
+  nebulaIdParam:
+    in: path
+    name: nebulaId
+    description: ID of the nebula to operate with.
+    required: true
+    type: integer
+    format: int64
+  galaxyIdParam:
+    in: path
+    name: galaxyId
+    description: ID of the galaxy to operate with.
+    required: true
+    type: integer
+    format: int64
+  planetarySystemIdParam:
+    in: path
+    name: planetarySystemId
+    description: ID of the planetary system to operate with.
+    required: true
+    type: integer
+    format: int64
+  planetIdParam:
+    in: path
+    name: planetId
+    description: ID of the planet to operate with.
+    required: true
+    type: integer
+    format: int64
+  dwarfPlanetIdParam:
+    in: path
+    name: dwarfPlanetId
+    description: ID of the dwarf planet to operate with.
+    required: true
+    type: integer
+    format: int64
+  asteroidIdParam:
+    in: path
+    name: asteroidId
+    description: ID of the asteroid to operate with.
+    required: true
+    type: integer
+    format: int64
+  cometIdParam:
+    in: path
+    name: cometId
+    description: ID of the comet to operate with.
+    required: true
+    type: integer
+    format: int64
+  satelliteIdParam:
+    in: path
+    name: satelliteId
+    description: ID of the satellite to operate with.
+    required: true
+    type: integer
+    format: int64
+  
   
 ## Requests
 
@@ -55,6 +118,8 @@ paths:
   /objects/constellations:
     x-swagger-router-controller: constellations
     get:
+      tags:
+        - constellation
       operationId: listConstellations
       description: |
         Gets all constellations from catalog.
@@ -70,6 +135,8 @@ paths:
           schema:
             $ref: "#/definitions/ErrorResponse"
     post:
+      tags:
+        - constellation
       operationId: createConstellation
       description: |
         Creates a new constellation.
@@ -94,6 +161,8 @@ paths:
     parameters:
       - $ref: "#/parameters/constellationIdParam"
     get:
+      tags:
+        - constellation
       operationId: getConstellation
       description: |
         Gets a constellation with a given identifier.
@@ -106,11 +175,13 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
-            
-  #Stars
+
+  #Stars            
   /objects/stars:
     x-swagger-router-controller: stars
     get:
+      tags:
+        - star
       operationId: listStars
       description: |
         Gets all stars from catalog.
@@ -125,7 +196,30 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+  /objects/constellations/{constellationId}/stars:
+    x-swagger-router-controller: stars
+    parameters:
+      - $ref: "#/parameters/constellationIdParam"
+    get:
+      tags:
+        - star
+      operationId: listConstellationStars
+      description: |
+        Gets all stars in constellation.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Star"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
     post:
+      tags:
+        - star
       operationId: createStar
       description: |
         Creates a new star.
@@ -144,7 +238,503 @@ paths:
         default:
           description: Error
           schema:
-            $ref: "#/definitions/ErrorResponse"         
+            $ref: "#/definitions/ErrorResponse"                
+  /objects/constellations/{constellationId}/stars/{starId}:
+    x-swagger-router-controller: stars
+    parameters:
+      - $ref: "#/parameters/constellationIdParam"
+      - $ref: "#/parameters/starIdParam"
+    get:
+      tags:
+        - star
+      operationId: getStar
+      description: |
+        Gets a star with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Star"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+            
+  # Nebulas
+  /objects/nebulas:
+    x-swagger-router-controller: nebulas
+    get:
+      tags:
+        - nebula
+      operationId: listNebulas
+      description: |
+        Gets all nebulas from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Nebula"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/constellations/{constellationId}/nebulas:
+    x-swagger-router-controller: nebulas
+    parameters:
+      - $ref: "#/parameters/constellationIdParam"
+    get:
+      tags:
+        - nebula
+      operationId: listConstellationNebulas
+      description: |
+        Gets all nebulas in constellation.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Nebula"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/constellations/{constellationId}/nebulas/{nebulaId}:
+    x-swagger-router-controller: nebulas
+    parameters:
+      - $ref: "#/parameters/constellationIdParam"
+      - $ref: "#/parameters/nebulaIdParam"
+    get:
+      tags:
+        - nebula
+      operationId: getNebula
+      description: |
+        Gets a nabula with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Nebula"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+            
+  # Galaxies
+  /objects/galaxies:
+    x-swagger-router-controller: galaxies
+    get:
+      tags:
+        - galaxy
+      operationId: listGalaxies
+      description: |
+        Gets all galaxies from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Galaxy"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    post:
+      tags:
+        - galaxy
+      operationId: createGalaxy
+      description: |
+        Creates a new galaxy.
+      parameters:
+        - in: body
+          name: galaxy
+          description: The galaxy to create.
+          required: true
+          schema:
+            $ref: "#/definitions/Galaxy"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Galaxy"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"  
+  /objects/galaxies/{galaxyId}:
+    x-swagger-router-controller: galaxies
+    parameters:
+      - $ref: "#/parameters/galaxyIdParam"
+    get:
+      tags:
+        - galaxy
+      operationId: getGalaxy
+      description: |
+        Gets a galaxy with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Galaxy"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+            
+  # Planetary systems
+  /objects/planetary-systems:
+    x-swagger-router-controller: planetary_systems
+    get:
+      tags:
+        - planetary system
+      operationId: listPlanetarySystems
+      description: |
+        Gets all planetary systems from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/PlanetarySystem"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planetary-systems/{planetarySystemId}:
+    x-swagger-router-controller: planetary_systems
+    parameters:
+      - $ref: "#/parameters/planetarySystemIdParam"
+    get:
+      tags:
+        - planetary system
+      operationId: getPlanetarySystem
+      description: |
+        Gets a planetary system with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/PlanetarySystem"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    
+  # Planets
+  /objects/planets:
+    x-swagger-router-controller: planets
+    get:
+      tags:
+        - planet
+      operationId: listPlanets
+      description: |
+        Gets all planets from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Planet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planetary-systems/{planetarySystemId}/planets:
+    x-swagger-router-controller: planets
+    parameters:
+      - $ref: "#/parameters/planetarySystemIdParam"
+    get:
+      tags:
+        - planet
+      operationId: listPlanetarySystemPlanets
+      description: |
+        Gets all planets in planetary system.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Planet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planetary-systems/{planetarySystemId}/planets/{planetId}:
+    x-swagger-router-controller: planets
+    parameters:
+      - $ref: "#/parameters/planetarySystemIdParam"
+      - $ref: "#/parameters/planetIdParam"
+    get:
+      tags:
+        - planet
+      operationId: getPlanet
+      description: |
+        Gets a planet with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Planet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  
+  # Dwarf planets
+  /objects/dwarf-planets:
+    x-swagger-router-controller: dwarf_planets
+    get:
+      tags:
+        - dwarf planet
+      operationId: listDwarfPlanets
+      description: |
+        Gets all dwarf planets from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/DwarfPlanet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planetary-systems/{planetarySystemId}/dwarf-planets:
+    x-swagger-router-controller: dwarf_planets
+    parameters:
+      - $ref: "#/parameters/planetarySystemIdParam"
+    get:
+      tags:
+        - dwarf planet
+      operationId: listPlanetarySystemDwarfPlanets
+      description: |
+        Gets all dwarf planets in planetary system.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/DwarfPlanet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planetary-systems/{planetarySystemId}/dwarf-planets/{dwarfPlanetId}:
+    x-swagger-router-controller: dwarf_planets
+    parameters:
+      - $ref: "#/parameters/planetarySystemIdParam"
+      - $ref: "#/parameters/dwarfPlanetIdParam"
+    get:
+      tags:
+        - dwarf planet
+      operationId: getDwarfPlanet
+      description: |
+        Gets a dwarf planet with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/DwarfPlanet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  
+  # Asteroids
+  /objects/asteroids:
+    x-swagger-router-controller: asteroids
+    get:
+      tags:
+        - asteroid
+      operationId: listAsteroids
+      description: |
+        Gets all asteroids from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Asteroid"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planetary-systems/{planetarySystemId}/asteroids:
+    x-swagger-router-controller: asteroids
+    parameters:
+      - $ref: "#/parameters/planetarySystemIdParam"
+    get:
+      tags:
+        - asteroid
+      operationId: listPlanetarySystemAsteroids
+      description: |
+        Gets all asteroids in planetary system.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Asteroid"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planetary-systems/{planetarySystemId}/asteroids/{asteroidId}:
+    x-swagger-router-controller: asteroids
+    parameters:
+      - $ref: "#/parameters/planetarySystemIdParam"
+      - $ref: "#/parameters/asteroidIdParam"
+    get:
+      tags:
+        - asteroid
+      operationId: getAsteroid
+      description: |
+        Gets a asteroid with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Asteroid"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+            
+  # Comets
+  /objects/comets:
+    x-swagger-router-controller: comets
+    get:
+      tags:
+        - comet
+      operationId: listComets
+      description: |
+        Gets all comets from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Comet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planetary-systems/{planetarySystemId}/comets:
+    x-swagger-router-controller: comets
+    parameters:
+      - $ref: "#/parameters/planetarySystemIdParam"
+    get:
+      tags:
+        - comet
+      operationId: listPlanetarySystemComets
+      description: |
+        Gets all comets in planetary system.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Comet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planetary-systems/{planetarySystemId}/comets/{cometId}:
+    x-swagger-router-controller: comets
+    parameters:
+      - $ref: "#/parameters/planetarySystemIdParam"
+      - $ref: "#/parameters/cometIdParam"
+    get:
+      tags:
+        - comet
+      operationId: getComet
+      description: |
+        Gets a comet with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Comet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+            
+  # Satellites
+  /objects/satellites:
+    x-swagger-router-controller: satellites
+    get:
+      tags:
+        - satellite
+      operationId: listSatellites
+      description: |
+        Gets all satellites from catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Satellite"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/planets/{planetId}/satellites:
+    x-swagger-router-controller: satellites
+    parameters:
+      - $ref: "#/parameters/planetIdParam"
+    get:
+      tags:
+        - satellite
+      operationId: listPlanetSatellites
+      description: |
+        Gets all satellites of planet.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Satellite"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"           
+  /objects/planets/{planetId}/satellites/{satelliteId}:
+    x-swagger-router-controller: satellites
+    parameters:
+      - $ref: "#/parameters/planetIdParam"
+      - $ref: "#/parameters/satelliteIdParam"
+    get:
+      tags:
+        - satellite
+      operationId: getSatellite
+      description: |
+        Gets a satellite with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Satellite"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  
+          
   /swagger:
     x-swagger-pipe: swagger_raw
 
@@ -249,6 +839,161 @@ definitions:
           constellation_id:
             type: integer
             description: Identifier of the constellation.          
+  Nebula:
+    type: object
+    allOf:
+      - $ref: "#/definitions/CelestialObject"
+      - properties:
+          hill_sphere:
+            type: string
+            description: Hill sphere of the nebula.
+          distance:
+            type: number
+            format: double
+            description: Distance from nebula to Earth.
+          snow_line:
+            type: number
+            format: double
+            description: Snow line of the nebula.
+          visible_dimensions:
+            type: number
+            format: double
+            description: Visible dimensions of the nebula.
+          apparent_magnitude:
+            type: number
+            format: double
+            description: Apparent magnitude of the nebula.
+          constellation_id:
+            type: integer
+            description: Identifier of the constellation.
+  Galaxy:
+    type: object
+    allOf:
+      - $ref: "#/definitions/CelestialObject"
+      - properties:
+          hill_sphere:
+            type: string
+            description: Hill sphere of the galaxy.
+          snow_line:
+            type: number
+            format: double
+            description: Snow line of the galaxy.
+          visible_dimensions:
+            type: number
+            format: double
+            description: Visible dimensions of the galaxy.
+          surface_brightness:
+            type: number
+            format: double
+            description: Surface brightness of the galaxy.
+          distance:
+            type: number
+            format: double
+            description: Distance from galaxy to Earth.
+          radial_velocity:
+            type: number
+            format: double
+            description: Radial velocity of the galaxy.
+  PlanetarySystem:
+    type: object
+    allOf:
+      - $ref: "#/definitions/CelestialObject"
+      - properties:
+          hill_sphere:
+            type: string
+            description: Hill sphere of the planetary system.
+          snow_line:
+            type: number
+            format: double
+            description: Snow line of the planetary system.
+          galaxy_id:
+            type: integer
+            description: Identifier of the galaxy.
+  Planetoid:
+    type: object
+    allOf:
+      - $ref: "#/definitions/CelestialObject"
+      - properties:
+          semi_major_axis:
+            type: number
+            format: double
+            description: Semi-major axis of the planetoid.
+          aphelion:
+            type: number
+            format: double
+            description: Aphelion of the planetoid.
+          perihelion:
+            type: number
+            format: double
+            description: Perihelion of the planetoid.
+          eccentricity:
+            type: number
+            format: double
+            description: Eccentricity of the planetoid.
+          orbital_inclination:
+            type: number
+            format: double
+            description: Orbital inclination of the planetoid.            
+          axial_tilt:
+            type: number
+            format: double
+            description: Axial tilt of the planetoid.
+          rotation_period:
+            type: number
+            format: double
+            description: Rotation period of the planetoid.
+          temperature:
+            type: number
+            format: double
+            description: Surface temperature of the planetoid.
+          planetary_system_id:
+            type: integer
+            description: Identifier of the planetary system.
+  Planet:
+    type: object
+    allOf:
+      - $ref: "#/definitions/Planetoid"
+      - properties:
+          day:
+            type: number
+            format: double
+            description: Day on the planet.
+  DwarfPlanet:
+    type: object
+    allOf:
+      - $ref: "#/definitions/Planetoid"
+      - properties:
+          mean_anomaly:
+            type: number
+            format: double
+            description: Mean anomaly of the dwarf planet.
+  Asteroid:
+    type: object
+    allOf:
+      - $ref: "#/definitions/Planetoid"
+      - properties:
+          mean_anomaly:
+            type: number
+            format: double
+            description: Mean anomaly of the asteroid.
+          snow_line:
+            type: number
+            format: double
+            description: Snow line of the asteroid.
+  Comet:
+    type: object
+    allOf:
+      - $ref: "#/definitions/Planetoid"
+      - properties:
+          epoch:
+            type: number
+            format: double
+            description: Epoch of the comet.
+  Satellite:
+    type: object
+    allOf:
+      - $ref: "#/definitions/Planetoid"
+          
   ErrorResponse:
     required:
       - message
