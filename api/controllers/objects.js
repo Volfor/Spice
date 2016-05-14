@@ -2,10 +2,17 @@
 
 var util = require('util');
 
+var T = require('../helpers/sql/tables');
+
 module.exports = {
-  listObjects: listObjects  
+  listObjects: listObjects,
+  listPlanetoids: listPlanetoids
 };
 
 function listObjects(req, res) {
-  tables.celestial_objects.get(null).then(function(info) { res.json(info) });
+  T.celestial_objects.get(null).then(info => res.json(info));
+}
+
+function listPlanetoids(req, res) {
+  T.planetoids.get(null).then(info => res.json(info));
 }

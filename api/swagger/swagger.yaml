@@ -113,6 +113,24 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+            
+  /planetoids:
+    x-swagger-router-controller: objects
+    get:
+      operationId: listPlanetoids
+      description: |
+        Gets all planetoids available in catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Planetoid"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
 
   #Constellations
   /objects/constellations:
@@ -301,6 +319,28 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    post:
+      tags:
+        - nebula
+      operationId: createNebula
+      description: |
+        Creates a new nebula.
+      parameters:
+        - in: body
+          name: nebula
+          description: The nebula to create.
+          required: true
+          schema:
+            $ref: "#/definitions/Nebula"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Nebula"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"                
   /objects/constellations/{constellationId}/nebulas/{nebulaId}:
     x-swagger-router-controller: nebulas
     parameters:
@@ -404,9 +444,53 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
-  /objects/planetary-systems/{planetarySystemId}:
+  /objects/galaxies/{galaxyId}/planetary-systems:
     x-swagger-router-controller: planetary_systems
     parameters:
+      - $ref: "#/parameters/galaxyIdParam"
+    get:
+      tags:
+        - planetary system
+      operationId: listGalaxyPlanetarySystems
+      description: |
+        Gets all planetary systems in galaxy.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/PlanetarySystem"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    post:
+      tags:
+        - planetary system
+      operationId: createPlanetarySystem
+      description: |
+        Creates a new planetary system.
+      parameters:
+        - in: body
+          name: planetarySystem
+          description: The planetary system to create.
+          required: true
+          schema:
+            $ref: "#/definitions/PlanetarySystem"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/PlanetarySystem"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"   
+  /objects/galaxies/{galaxyId}/planetary-systems/{planetarySystemId}:
+    x-swagger-router-controller: planetary_systems
+    parameters:
+      - $ref: "#/parameters/galaxyIdParam"
       - $ref: "#/parameters/planetarySystemIdParam"
     get:
       tags:
@@ -465,6 +549,28 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    post:
+      tags:
+        - planet
+      operationId: createPlanet
+      description: |
+        Creates a new planet.
+      parameters:
+        - in: body
+          name: planet
+          description: The planet to create.
+          required: true
+          schema:
+            $ref: "#/definitions/Planet"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Planet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"    
   /objects/planetary-systems/{planetarySystemId}/planets/{planetId}:
     x-swagger-router-controller: planets
     parameters:
@@ -527,6 +633,28 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    post:
+      tags:
+        - dwarf planet
+      operationId: createDwarfPlanet
+      description: |
+        Creates a new dwarf planet.
+      parameters:
+        - in: body
+          name: dwarfPlanet
+          description: The dwarf planet to create.
+          required: true
+          schema:
+            $ref: "#/definitions/DwarfPlanet"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/DwarfPlanet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"  
   /objects/planetary-systems/{planetarySystemId}/dwarf-planets/{dwarfPlanetId}:
     x-swagger-router-controller: dwarf_planets
     parameters:
@@ -589,6 +717,28 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    post:
+      tags:
+        - asteroid
+      operationId: createAsteroid
+      description: |
+        Creates a new asteroid.
+      parameters:
+        - in: body
+          name: asteroid
+          description: The asteroid to create.
+          required: true
+          schema:
+            $ref: "#/definitions/Asteroid"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Asteroid"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse" 
   /objects/planetary-systems/{planetarySystemId}/asteroids/{asteroidId}:
     x-swagger-router-controller: asteroids
     parameters:
@@ -647,6 +797,28 @@ paths:
             type: array
             items:
               $ref: "#/definitions/Comet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    post:
+      tags:
+        - comet
+      operationId: createComet
+      description: |
+        Creates a new comet.
+      parameters:
+        - in: body
+          name: comet
+          description: The comet to create.
+          required: true
+          schema:
+            $ref: "#/definitions/Comet"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Comet"
         default:
           description: Error
           schema:
@@ -712,7 +884,29 @@ paths:
         default:
           description: Error
           schema:
-            $ref: "#/definitions/ErrorResponse"           
+            $ref: "#/definitions/ErrorResponse"
+    post:
+      tags:
+        - satellite
+      operationId: createSatellite
+      description: |
+        Creates a new satellite.
+      parameters:
+        - in: body
+          name: satellite
+          description: The satellite to create.
+          required: true
+          schema:
+            $ref: "#/definitions/Satellite"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Satellite"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /objects/planets/{planetId}/satellites/{satelliteId}:
     x-swagger-router-controller: satellites
     parameters:

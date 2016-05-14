@@ -34,22 +34,116 @@ function without_fields(obj, fields) {
   return newObj;
 }
 
-/**
- * Take only specified fields
- */
-function insert_without(table, obj, fields) {
-  return knex.insert(without_fields(obj, fields))
-             .into(table.name)
-             .then(function(ids) { return table.get(ids[0]) })
-             .then(function(data) { return without_nulls(data, true) });
+function insert_child(parentTable, childTable, obj, parentFields, childFields) {
+  return knex.insert(without_fields(obj, childFields))
+             .into(parentTable.name)
+             .then(ids => {
+               obj.id = ids[0];
+               return parentTable.get(ids[0]);
+             })
+             .then(data => without_nulls(data, true))
+             .then(() => knex.insert(without_fields(obj, parentFields))
+                             .into(childTable.name))
+                             .then(ids => childTable.get(ids[0]))
+                             .then(data => without_nulls(data, true));
 }
 
-GLOBAL.tables = {
+function insert_child_into(parentTable, childTable, intoId, obj, parentFields, childFields) {
+  return knex.insert(without_fields(obj, childFields))
+             .into(parentTable.name)
+             .then(ids => {
+               obj.id = ids[0];
+               return parentTable.get(ids[0]);
+             })
+             .then(data => without_nulls(data, true))
+             .then(() => knex.insert(without_fields(obj, parentFields))
+                             .into(childTable.name))
+                             .then(ids => childTable.get(intoId, ids[0]))
+                             .then(data => without_nulls(data, true));
+}
+
+function insert_planetoid(baseTable, planetoidTable, childTable, planetarySystemId, obj, baseFields, planetoidFields, childFields) {
+  var planetoidAndChildFields = planetoidFields.concat(childFields);
+  var baseAndChildFields = baseFields.concat(childFields);
+  var baseAndPlanetoidFields = baseFields.concat(planetoidFields);
+  
+  remove(baseAndChildFields, 'id');
+  remove(baseAndPlanetoidFields, 'id');
+    
+  return knex.insert(without_fields(obj, planetoidAndChildFields))
+             .into(baseTable.name)
+             .then(ids => {
+               obj.id = ids[0];               
+               return baseTable.get(ids[0]);
+             })
+             .then(data => without_nulls(data, true))
+             .then(() => {                
+                obj.planetary_system_id = planetarySystemId;
+                return knex.insert(without_fields(obj, baseAndChildFields))
+                            .into(planetoidTable.name)
+                            .then(ids => planetoidTable.get(ids[0]))
+                            .then(data => without_nulls(data, true))
+                            .then(() => knex.insert(without_fields(obj, baseAndPlanetoidFields))
+                                            .into(childTable.name)
+                                            .then(ids => childTable.get(planetarySystemId, ids[0]))
+                                            .then(data => without_nulls(data, true)))
+             });
+}
+
+function insert_satellite(baseTable, planetoidTable, childTable, planetId, obj, baseFields, planetoidFields, childFields) {
+  var planetoidAndChildFields = planetoidFields.concat(childFields);
+  var baseAndChildFields = baseFields.concat(childFields);
+  var baseAndPlanetoidFields = baseFields.concat(planetoidFields);
+  
+  remove(baseAndChildFields, 'id');
+  remove(baseAndPlanetoidFields, 'id');
+    
+  return knex.insert(without_fields(obj, planetoidAndChildFields))
+             .into(baseTable.name)
+             .then(ids => {
+               obj.id = ids[0];               
+               return baseTable.get(ids[0]);
+             })
+             .then(data => without_nulls(data, true))
+             .then(() => knex.insert(without_fields(obj, baseAndChildFields))
+                             .into(planetoidTable.name)
+                             .then(ids => planetoidTable.get(ids[0]))
+                             .then(data => without_nulls(data, true))
+                             .then(() => knex.insert(without_fields(obj, baseAndPlanetoidFields))
+                                            .into(childTable.name)
+                                            .then(ids => childTable.get(planetId, ids[0]))
+                                            .then(data => without_nulls(data, true)))
+             );
+}
+
+function get_with_id(table, id) {
+  var query;
+  if (id) {
+    query = knex.first().where("id", id).from(table.name);
+  } else {
+    query = knex.select().from(table.name);
+  }
+  return query.then(data => without_nulls(data, true));
+}
+
+function remove(arr, what) {
+    var found = arr.indexOf(what);
+
+    while (found !== -1) {
+        arr.splice(found, 1);
+        found = arr.indexOf(what);
+    }
+}
+
+var baseFields = ["name", "discoverer", "discovery_date", "discovery_place", "age", "volume", "mass", 
+                             "radius", "surface_area", "mean_density", "whose_satellite", "stars"];
+
+var T = {
   celestial_objects: {
     name: "Celestial_Objects",
     fields: ["id", "name", "discoverer", "discovery_date", "discovery_place", "age", "volume", "mass", "radius", 
              "surface_area", "mean_density", "whose_satellite"],
-    init: function (table) {
+    init: table => {
       table.increments("id");
       table.string("name");
       table.string("discoverer");
@@ -64,25 +158,18 @@ GLOBAL.tables = {
 
       table.integer("whose_satellite")
            .references("id")
-           .inTable(tables.celestial_objects.name);
+           .inTable(T.celestial_objects.name);
 
-      table.timestamps();      
+      table.timestamps();       
     },
-    get: function(id) {
-      var query;
-      if (id) {
-        query = knex.select().where("id", id).from(tables.celestial_objects.name);
-      } else {
-        query = knex.select().from(tables.celestial_objects.name);
-      }
-      return query.then(function (data) { return without_nulls(data, true) });
-    }
+    get: id => get_with_id(T.celestial_objects, id),    
   },
   images: {
     name: "Images",
     fields: ["id", "spectrum", "shooting_date", "author", "telescope", "url"],
-    init: function (table) {
-      table.integer("id");
+
+    init: table => {
+      table.increments("id");
       table.float("spectrum");
       table.date("shooting_date");
       table.string("author");
@@ -90,66 +177,61 @@ GLOBAL.tables = {
       table.string("url");
 
       table.timestamps();
-
-      table.primary("id");
-    }
+    },    
   },
   image_object: {
     name: "Image_Object",
     fields: ["image_id", "object_id"],
-    init: function (table) {
+    init: table => {
       table.integer("image_id")
            .references("id")
-           .inTable(tables.images.name);
+           .inTable(T.images.name);
       table.integer("object_id")
            .references("id")
-           .inTable(tables.celestial_objects.name);
+           .inTable(T.celestial_objects.name);
 
       table.timestamps();
 
       table.primary(["image_id", "object_id"]);
-    }
+    },
   },
   constellations: {
     name: "Constellations",
     fields: ["id", "limits", "hill_sphere"],
     foreignFields: ["stars"],
-    init: function (table) {
+    init: table => {
       table.integer("id");
       table.string("limits");
       table.string("hill_sphere");      
-      table.timestamps();
-
+      table.timestamps();      
       table.primary("id");
-    },
-    new: function(constellation) {      
-      return insert_without(tables.constellations, constellation, 
-                  ["name", "discoverer", "discovery_date", "discovery_place", "age", "volume", "mass", 
-                   "radius", "surface_area", "mean_density", "whose_satellite", "stars"])
-        .then(insert_without(tables.celestial_objects, constellation, ["limits", "hill_sphere", "stars"]));      
-    },
-    get: function(id) {
+    },    
+    new: constellation => {
+      var baseFields_ = baseFields;
+      baseFields_.push("stars");
+      return insert_child(T.celestial_objects, T.constellations, constellation, baseFields_, 
+                        ["id", "limits", "hill_sphere", "stars"]);
+    },   
+    get: id => {
       var query;
-      if (id) {        
+      if (id) {
         query = knex.first()
-                    .from(tables.celestial_objects.name)
-                    .innerJoin(tables.constellations.name, tables.celestial_objects.name + ".id", 
-                               tables.constellations.name + ".id")
-                    .where(tables.constellations.name + ".id", id);
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.constellations.name, T.celestial_objects.name + ".id", T.constellations.name + ".id")
+                    .where(T.constellations.name + ".id", id);
       } else {        
         query = knex.select()
-                    .from(tables.celestial_objects.name)
-                    .innerJoin(tables.constellations.name, tables.celestial_objects.name + ".id", 
-                               tables.constellations.name + ".id");
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.constellations.name, T.celestial_objects.name + ".id", T.constellations.name + ".id");
       }
-      return query.then(function (data) { return without_nulls(data, true) });
-    }
+      return query.then(data => without_nulls(data, true));
+    },
   },
   stars: {
     name: "Stars",
     fields: ["id", "right_ascension", "declination", "apparent_magnitude", "distance", "radial_velocity", 
              "luminosity", "effective_temperature", "constellation_id", "planetary_system_id"],
-    init: function (table) {
+    init: table => {
       table.integer("id");
       table.float("right_ascension");
       table.float("declination");
@@ -161,42 +243,43 @@ GLOBAL.tables = {
       
       table.integer("constellation_id")
            .references("id")
-           .inTable(tables.constellations.name);
+           .inTable(T.constellations.name);
 
-      table.timestamps();
+      table.timestamps();      
 
       table.primary("id");
     },
-    new: function(constellationId, star) {            
+    new: (constellationId, star) => {
       star.constellation_id = constellationId;
-      return insert_without(tables.stars, star, 
-                  ["name", "discoverer", "discovery_date", "discovery_place", "age", "volume", "mass", 
-                   "radius", "surface_area", "mean_density", "whose_satellite"])
-        .then(insert_without(tables.celestial_objects, star, 
-                  ["right_ascension", "declination", "apparent_magnitude", "distance", "radial_velocity", 
-                   "luminosity", "effective_temperature", "constellation_id", "planetary_system_id"]));        
-    },
-
-    get: function(constellationId, starId) {
+      return insert_child_into(T.celestial_objects, T.stars, constellationId, star, baseFields, T.stars.fields);      
+    }, 
+    get: (constellationId, starId) => {
       var query;
       if (constellationId) {
         if (starId) {
-          query = knex.first().from(tables.celestial_objects.name).innerJoin(tables.stars.name, tables.celestial_objects.name + ".id", tables.stars.name + ".id").where("id", starId);
-        } 
-        else {
-          query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.stars.name, tables.celestial_objects.name + ".id", tables.stars.name + ".id").where("constellation_id", constellationId);
+          query = knex.first()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.stars.name, T.celestial_objects.name + ".id", T.stars.name + ".id")
+                      .where(T.stars.name + ".id", starId);
+        } else {
+          query = knex.select()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.stars.name, T.celestial_objects.name + ".id", T.stars.name + ".id")
+                      .where("constellation_id", constellationId);
         }        
-      } 
-      else {
-        query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.stars.name, tables.celestial_objects.name + ".id", tables.stars.name + ".id");
+      } else {
+        query = knex.select()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.stars.name, T.celestial_objects.name + ".id", T.stars.name + ".id");
       }      
-      return query.then(function (data) { return without_nulls(data, true) });
-    }
+      return query.then(data => without_nulls(data, true));
+    },
   },
   nebulas: {
     name: "Nebulas",
-    fields: ["id", "hill_sphere", "distance", "snow_line", "visible_dimensions", "apparent_magnitude", "constellation_id"],
-    init: function (table) {
+    fields: ["id", "hill_sphere", "distance", "snow_line", "visible_dimensions", "apparent_magnitude", 
+             "constellation_id"],
+    init: table => {
       table.integer("id");
       table.string("hill_sphere");
       table.float("distance");
@@ -206,32 +289,43 @@ GLOBAL.tables = {
 
       table.integer("constellation_id")
            .references("id")
-           .inTable(tables.constellations.name);
+           .inTable(T.constellations.name);
 
-      table.timestamps();
+      table.timestamps();      
 
       table.primary("id");
-    },
-    get: function (constellationId, nebulaId) {
+    },   
+    new: (constellationId, nebula) => {
+      nebula.constellation_id = constellationId;
+      return insert_child_into(T.celestial_objects, T.nebulas, constellationId, nebula, baseFields, T.nebulas.fields);
+    },           
+    get: (constellationId, nebulaId) => {
       var query;
       if (constellationId) {
         if (nebulaId) {
-          query = knex.first().from(tables.celestial_objects.name).innerJoin(tables.nebulas.name, tables.celestial_objects.name + ".id", tables.nebulas.name + ".id").where("id", nebulaId);
-        }
-        else {
-          query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.nebulas.name, tables.celestial_objects.name + ".id", tables.nebulas.name + ".id").where("constellation_id", constellationId);
+          query = knex.first()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.nebulas.name, T.celestial_objects.name + ".id", T.nebulas.name + ".id")
+                      .where(T.nebulas.name + ".id", nebulaId);
+        } else {
+          query = knex.select()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.nebulas.name, T.celestial_objects.name + ".id", T.nebulas.name + ".id")
+                      .where("constellation_id", constellationId);
         }        
-      } 
-      else {
-        query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.nebulas.name, tables.celestial_objects.name + ".id", tables.nebulas.name + ".id");
+      } else {
+        query = knex.select()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.nebulas.name, T.celestial_objects.name + ".id", T.nebulas.name + ".id");
       }      
-      return query.then(function (data) { return without_nulls(data, true) });
-    }
+      return query.then(data => without_nulls(data, true));
+    },    
   },
   galaxies: {
     name: "Galaxies",
-    fields: ["id", "hill_sphere", "snow_line", "visible_dimensions", "surface_brightness", "distance", "radial_velocity"],
-    init: function (table) {
+    fields: ["id", "hill_sphere", "snow_line", "visible_dimensions", "surface_brightness", "distance", 
+             "radial_velocity"],
+    init: table => {
       table.integer("id");
       table.string("hill_sphere");
       table.float("snow_line");
@@ -240,64 +334,77 @@ GLOBAL.tables = {
       table.float("distance");
       table.float("radial_velocity");
 
-      table.timestamps();
+      table.timestamps();      
 
       table.primary("id");
-    },
-    new: function(galaxy) {      
-      return knex.insert(without_fields(galaxy, ["name", "discoverer", "discovery_date", "discovery_place", "age", "volume", "mass", "radius", "surface_area", "mean_density", "whose_satellite"]))
-                .into(tables.galaxies.name)
-                .then(function(ids) { return tables.galaxies.get(ids[0]) })
-                .then(function(data) { return without_nulls(data, true) })
-                .then(function(response) { 
-                    return knex.insert(without_fields(galaxy, ["hill_sphere", "snow_line", "visible_dimensions", "surface_brightness", "distance", "radial_velocity"]))
-                              .into(tables.celestial_objects.name)
-                              .then(function(ids) { return tables.galaxies.get(ids[0]) }) 
-                              .then(function(data) { return without_nulls(data, true) })
-                });  
-    },
-    get: function (id) {
+    },          
+    new: galaxy => insert_child(T.celestial_objects, T.galaxies, galaxy, baseFields, T.galaxies.fields),
+    get: id => {
       var query;
       if (id) {
-        query = knex.first().from(tables.celestial_objects.name).innerJoin(tables.galaxies.name, tables.celestial_objects.name + ".id", tables.galaxies.name + ".id").where(tables.galaxies.name + ".id", id);
-      }
-      else {
-        query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.galaxies.name, tables.celestial_objects.name + ".id", tables.galaxies.name + ".id");
+        query = knex.first()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.galaxies.name, T.celestial_objects.name + ".id", T.galaxies.name + ".id")
+                    .where(T.galaxies.name + ".id", id);
+      } else {
+        query = knex.select()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.galaxies.name, T.celestial_objects.name + ".id", T.galaxies.name + ".id");
       }     
-      return query.then(function (data) { return without_nulls(data, true) }); 
-    }
+      return query.then(data => without_nulls(data, true));
+    },        
   },
   planetary_systems: {
     name: "Planetary_Systems",
     fields: ["id", "hill_sphere", "snow_line", "galaxy_id"],
-    init: function (table) {
+    init: table => {
       table.integer("id");
       table.string("hill_sphere");
       table.float("snow_line");
 
       table.integer("galaxy_id")
            .references("id")
-           .inTable(tables.galaxies.name);
+           .inTable(T.galaxies.name);
 
       table.timestamps();
 
       table.primary("id");
+    },  
+    new: (galaxyId, planetarySystem) => {
+      planetarySystem.galaxy_id = galaxyId;
+      return insert_child_into(T.celestial_objects, T.planetary_systems, galaxyId, planetarySystem, baseFields, 
+                               T.planetary_systems.fields);
     },
-    get: function (id) {
+    get: (galaxyId, planetarySystemId) => {
       var query;
-      if (id) {
-        query = knex.first().from(tables.celestial_objects.name).innerJoin(tables.planetary_systems.name, tables.celestial_objects.name + ".id", tables.planetary_systems.name + ".id").where(tables.planetary_systems.name + ".id", id);
-      }
-      else {
-        query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetary_systems.name, tables.celestial_objects.name + ".id", tables.planetary_systems.name + ".id");
-      }
-      return query.then(function (data) { return without_nulls(data, true) }); 
-    }
+      if (galaxyId) {
+        if (planetarySystemId) {
+          query = knex.first()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetary_systems.name, T.celestial_objects.name + ".id", 
+                                 T.planetary_systems.name + ".id")
+                      .where(T.planetary_systems.name + ".id", planetarySystemId);
+        } else {
+          query = knex.select()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetary_systems.name, T.celestial_objects.name + ".id", 
+                                 T.planetary_systems.name + ".id")
+                      .where("galaxy_id", galaxyId);
+        }        
+      } else {
+        query = knex.select()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.planetary_systems.name, T.celestial_objects.name + ".id", 
+                               T.planetary_systems.name + ".id");
+      }      
+      return query.then(data => without_nulls(data, true));
+    }, 
   },
   planetoids: {
     name: "Planetoids",
-    fields: ["id", "semi_major_axis", "aphelion", "perihelion", "eccentricity", "orbital_inclination", "axial_tilt", "rotation_period", "temperature", "planetary_system_id"],
-    init: function (table) {
+    fields: ["id", "semi_major_axis", "aphelion", "perihelion", "eccentricity", "orbital_inclination", "axial_tilt", 
+             "rotation_period", "temperature", "planetary_system_id"],
+    init: table => {
       table.integer("id");
       table.float("semi_major_axis");
       table.float("aphelion");
@@ -310,159 +417,220 @@ GLOBAL.tables = {
 
       table.integer("planetary_system_id")      
            .references("id")
-           .inTable(tables.planetary_systems.name);
+           .inTable(T.planetary_systems.name);
 
       table.timestamps();
 
       table.primary("id");
-    }
+    },
+    get: id => get_with_id(T.planetoids, id),
   },
   planets: {
     name: "Planets",
     fields: ["id", "day"],
-    init: function (table) {
+    init: table => {
       table.integer("id");
       table.float("day");
-
       table.timestamps();
 
       table.primary("id");
     },
-    get: function (planetarySystemId, planetId) {
-      var query;      
+    new: (planetarySystemId, planet) => insert_planetoid(T.celestial_objects, T.planetoids, T.planets, 
+                planetarySystemId, planet, baseFields, T.planetoids.fields, T.planets.fields),
+    get: (planetarySystemId, planetId) => {
+      var query;
       if (planetarySystemId) {
         if (planetId) {
-          query = knex.first().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.planets.name, tables.planetoids.name + ".id", tables.planets.name + ".id").where("id", planetId);
-        } 
-        else {
-          query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.planets.name, tables.planetoids.name + ".id", tables.planets.name + ".id").where("planetary_system_id", planetarySystemId);
+          query = knex.first()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.planets.name, T.planetoids.name + ".id", T.planets.name + ".id")
+                      .where(T.planets.name + ".id", planetId);
+        } else {
+          query = knex.select()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.planets.name, T.planetoids.name + ".id", T.planets.name + ".id")
+                      .where("planetary_system_id", planetarySystemId);
         }  
-      }
-      else {
-        query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.planets.name, tables.planetoids.name + ".id", tables.planets.name + ".id");
+      } else {
+        query = knex.select()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                    .innerJoin(T.planets.name, T.planetoids.name + ".id", T.planets.name + ".id");
       }      
-      return query.then(function (data) { return without_nulls(data, true) }); 
-    }
+      return query.then(data => without_nulls(data, true));
+    },     
   },
   dwarf_planets: {
     name: "Dwarf_Planets",
     fields: ["id", "mean_anomaly"],
-    init: function (table) {
+    init: table => {
       table.integer("id");
       table.float("mean_anomaly");
-
       table.timestamps();
 
       table.primary("id");
     },
-    get: function (planetarySystemId, dwarfPlanetId) {
-      var query;            
+    new: (planetarySystemId, dwarfPlanet) => insert_planetoid(T.celestial_objects, T.planetoids, T.dwarf_planets,
+                planetarySystemId, dwarfPlanet, baseFields, T.planetoids.fields, T.dwarf_planets.fields),
+    get: (planetarySystemId, dwarfPlanetId) => {
+      var query;
       if (planetarySystemId) {
         if (dwarfPlanetId) {
-           query = knex.first().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.dwarf_planets.name, tables.planetoids.name + ".id", tables.dwarf_planets.name + ".id").where("id", dwarfPlanetId);
-        } 
-        else {
-          query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.dwarf_planets.name, tables.planetoids.name + ".id", tables.dwarf_planets.name + ".id").where("planetary_system_id", planetarySystemId);
+          query = knex.first()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.dwarf_planets.name, T.planetoids.name + ".id", T.dwarf_planets.name + ".id")
+                      .where(T.dwarf_planets.name + ".id", dwarfPlanetId);
+        } else {
+          query = knex.select()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.dwarf_planets.name, T.planetoids.name + ".id", T.dwarf_planets.name + ".id")
+                      .where("planetary_system_id", planetarySystemId);
         }
+      } else {
+        query = knex.select()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                    .innerJoin(T.dwarf_planets.name, T.planetoids.name + ".id", T.dwarf_planets.name + ".id");
       }
-      else {
-        query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.dwarf_planets.name, tables.planetoids.name + ".id", tables.dwarf_planets.name + ".id");          
-      }
-      return query.then(function (data) { return without_nulls(data, true) }); 
-    }
+      return query.then(data => without_nulls(data, true));
+    },
   },
   asteroids: {
     name: "Asteroids",
     fields: ["id", "mean_anomaly", "snow_line"],
-    init: function (table) {
+    init: table => {
       table.integer("id");
       table.float("mean_anomaly");
       table.float("snow_line");
-
       table.timestamps();
 
       table.primary("id");
-    },    
-    get: function (planetarySystemId, asteroidId) {
-      var query;                  
+    },
+    new: (planetarySystemId, asteroid) => insert_planetoid(T.celestial_objects, T.planetoids, T.asteroids,
+                planetarySystemId, asteroid, baseFields, T.planetoids.fields, T.asteroids.fields),
+    get: (planetarySystemId, asteroidId) => {
+      var query;
       if (planetarySystemId) {
         if (asteroidId) {
-          query = knex.first().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.asteroids.name, tables.planetoids.name + ".id", tables.asteroids.name + ".id").where("id", asteroidId);
+          query = knex.first()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.asteroids.name, T.planetoids.name + ".id", T.asteroids.name + ".id")
+                      .where(T.asteroids.name + ".id", asteroidId);
+        } else {
+          query = knex.select()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.asteroids.name, T.planetoids.name + ".id", T.asteroids.name + ".id")
+                      .where("planetary_system_id", planetarySystemId);
         }
-        else {
-          query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.asteroids.name, tables.planetoids.name + ".id", tables.asteroids.name + ".id").where("planetary_system_id", planetarySystemId);
-        }
+      } else {
+        query = knex.select()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                    .innerJoin(T.asteroids.name, T.planetoids.name + ".id", T.asteroids.name + ".id");
       }
-      else {
-        query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.asteroids.name, tables.planetoids.name + ".id", tables.asteroids.name + ".id");          
-      }      
-      return query.then(function (data) { return without_nulls(data, true) }); 
-    }
+      return query.then(data => without_nulls(data, true));
+    },    
   },
   comets: {
     name: "Comets",
     fields: ["id", "epoch"],
-    init: function (table) {
+    init: table => {
       table.integer("id");
       table.float("epoch");
-
       table.timestamps();
 
       table.primary("id");
-    },
-    get: function (planetarySystemId, cometId) {
+    }, 
+    new: (planetarySystemId, comet) => insert_planetoid(T.celestial_objects, T.planetoids, T.comets, 
+                planetarySystemId, comet, baseFields, T.planetoids.fields, T.comets.fields),
+    get: (planetarySystemId, cometId) => {
       var query;
       if (planetarySystemId) {
         if (cometId) {
-          query = knex.first().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.comets.name, tables.planetoids.name + ".id", tables.comets.name + ".id").where("id", cometId);
+          query = knex.first()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.comets.name, T.planetoids.name + ".id", T.comets.name + ".id")
+                      .where(T.comets.name + ".id", cometId);
+        } else {
+          query = knex.select()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.comets.name, T.planetoids.name + ".id", T.comets.name + ".id")
+                      .where("planetary_system_id", planetarySystemId);
         }
-        else {
-          query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.comets.name, tables.planetoids.name + ".id", tables.comets.name + ".id").where("planetary_system_id", planetarySystemId);
-        }
+      } else {
+        query = knex.select()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", 
+                               T.planetoids.name + ".id")
+                    .innerJoin(T.comets.name, T.planetoids.name + ".id", T.comets.name + ".id");
       }
-      else {
-        query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.comets.name, tables.planetoids.name + ".id", tables.comets.name + ".id");
-      }
-      return query.then(function (data) { return without_nulls(data, true) }); 
-    }
+      return query.then(data => without_nulls(data, true));
+    },    
   },
   satellites: {
     name: "Satellites",
     fields: ["id"],
-    init: function (table) {
+    init: table => {
       table.integer("id");
       table.timestamps();
       table.primary("id");
+    }, 
+    new: (planetId, satellite) => {
+      satellite.whose_satellite = planetId;
+      return insert_satellite(T.celestial_objects, T.planetoids, T.satellites, planetId, satellite,
+                              baseFields, T.planetoids.fields, T.satellites.fields);
     },
-    get: function (planetId, satelliteId) {
+    get: (planetId, satelliteId) => {
+      var query;
       if (planetId) {
         if (satelliteId) {
-           query = knex.first().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.satellites.name, tables.planetoids.name + ".id", tables.satellites.name + ".id").where("id", satelliteId);
+          query = knex.first()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.satellites.name, T.planetoids.name + ".id", T.satellites.name + ".id")
+                      .where(T.satellites.name + ".id", satelliteId);
+        } else {
+          query = knex.select()
+                      .from(T.celestial_objects.name)
+                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                      .innerJoin(T.satellites.name, T.planetoids.name + ".id", T.satellites.name + ".id")
+                      .where("whose_satellite", planetId);
         }
-        else {
-          query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.satellites.name, tables.planetoids.name + ".id", tables.satellites.name + ".id").where("whose_satellite", planetId);
-        }
+      } else {
+        query = knex.select()
+                    .from(T.celestial_objects.name)
+                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
+                    .innerJoin(T.satellites.name, T.planetoids.name + ".id", T.satellites.name + ".id");
       }
-      else {
-         query = knex.select().from(tables.celestial_objects.name).innerJoin(tables.planetoids.name, tables.celestial_objects.name + ".id", tables.planetoids.name + ".id").innerJoin(tables.satellites.name, tables.planetoids.name + ".id", tables.satellites.name + ".id");
+      return query.then(data => without_nulls(data, true));
+    },     
+  },
+
+  /*
+   * Global database functions
+   */
+  createAllTables: function(knex) {
+    for (var key in T) {
+      if (T.hasOwnProperty(key) && !(T[key] instanceof Function)) {
+        knex.schema.createTableIfNotExists(T[key].name, T[key].init).return(0)
+      }
+    }
+  },
+  dropAllTables: function(knex) {
+    for (var key in T) {
+      if (T.hasOwnProperty(key) && !(T[key] instanceof Function)) {
+        knex.schema.dropTableIfExists(T[key].name).return(0);
       }
     }
   }
 }
 
-module.exports = {
-  createAllTables: function(knex) {
-    for (var key in tables) {
-      if (tables.hasOwnProperty(key)) {
-        knex.schema.createTableIfNotExists(tables[key].name, tables[key].init).return(0)
-      }
-    }
-  },
-  dropAllTables: function(knex) {
-    for (var key in tables) {
-      if (tables.hasOwnProperty(key)) {
-        knex.schema.dropTableIfExists(tables[key].name).return(0);
-      }
-    }
-  }
-}
+module.exports = T;

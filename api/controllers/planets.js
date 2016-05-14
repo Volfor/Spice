@@ -2,21 +2,28 @@
 
 var util = require('util');
 
+var T = require('../helpers/sql/tables');
+
 module.exports = {  
   listPlanets: listPlanets,
   listPlanetarySystemPlanets: listPlanetarySystemPlanets,
+  createPlanet: createPlanet,
   getPlanet: getPlanet
 };
 
 function listPlanets(req, res) {
-  tables.planets.get(null, null).then(function(info) { res.json(info) });
+  T.planets.get(null, null).then(info => res.json(info));
 }
 
 function listPlanetarySystemPlanets(req, res) {
-  tables.planets.get(req.swagger.params.planetarySystemId.value, null).then(function(info) { res.json(info) });
+  T.planets.get(req.swagger.params.planetarySystemId.value, null).then(info => res.json(info));
+}
+
+function createPlanet(req, res) {
+  T.planets.new(req.swagger.params.planetarySystemId.value, req.swagger.params.planet.value).then(data => res.json(data));
 }
 
 function getPlanet(req, res) {
-  tables.planets.get(req.swagger.params.planetarySystemId.value, req.swagger.params.planetId.value)
-  			  .then(function(data) { res.json(data) });
+  T.planets.get(req.swagger.params.planetarySystemId.value, req.swagger.params.planetId.value)
+  		   .then(data => res.json(data));
 }

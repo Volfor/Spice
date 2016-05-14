@@ -2,6 +2,8 @@
 
 var util = require('util');
 
+var T = require('../helpers/sql/tables');
+
 module.exports = {  
   listConstellations: listConstellations,
   createConstellation: createConstellation,
@@ -9,13 +11,13 @@ module.exports = {
 };
 
 function listConstellations(req, res) {
-  tables.constellations.get(null).then(function(info) { res.json(info) });
+  T.constellations.get(null).then(function(info) { res.json(info) });
 }
 
 function getConstellation(req, res) {
-  tables.constellations.get(req.swagger.params.constellationId.value).then(function(data) { res.json(data) });
+  T.constellations.get(req.swagger.params.constellationId.value).then(data => res.json(data));
 }
 
 function createConstellation(req, res) {
-  tables.constellations.new(req.swagger.params.constellation.value).then(function(data) { res.json(data) });
+  T.constellations.new(req.swagger.params.constellation.value).then(function(data) { res.json(data) });
 }

@@ -2,21 +2,27 @@
 
 var util = require('util');
 
+var T = require('../helpers/sql/tables');
+
 module.exports = {  
   listNebulas: listNebulas,
-  listConstellationNebulas: listConstellationNebulas,
+  listConstellationNebulas: listConstellationNebulas,  
+  createNebula: createNebula,
   getNebula: getNebula
 };
 
 function listNebulas(req, res) {
-  tables.nebulas.get(null).then(function(info) { res.json(info) });
+  T.nebulas.get(null, null).then(info => res.json(info));
 }
 
 function listConstellationNebulas(req, res) {
-  tables.nebulas.get(req.swagger.params.constellationId.value).then(function(info) { res.json(info) });
+  T.nebulas.get(req.swagger.params.constellationId.value, null).then(info => res.json(info));
+}
+
+function createNebula(req, res) {
+  T.nebulas.new(req.swagger.params.constellationId.value, req.swagger.params.nebula.value).then(data => res.json(data));
 }
 
 function getNebula(req, res) {
-  tables.nebulas.get(req.swagger.params.constellationId.value, req.swagger.params.nebulaId.value)
-  			  .then(function(data) { res.json(data) });
+  T.nebulas.get(req.swagger.params.constellationId.value, req.swagger.params.nebulaId.value).then(data => res.json(data));
 }
