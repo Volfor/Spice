@@ -381,7 +381,6 @@ var T = {
       table.float("radial_velocity");
 
       table.timestamps();      
-
       table.primary("id");
     },          
     new: galaxy => insert_child(T.celestial_objects, T.galaxies, null, galaxy, baseFields, T.galaxies.fields),
