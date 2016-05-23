@@ -8,7 +8,8 @@ module.exports = {
   listDwarfPlanets: listDwarfPlanets,
   listPlanetarySystemDwarfPlanets: listPlanetarySystemDwarfPlanets,
   createDwarfPlanet: createDwarfPlanet,
-  getDwarfPlanet: getDwarfPlanet
+  getDwarfPlanet: getDwarfPlanet,
+  updateDwarfPlanet: updateDwarfPlanet
 };
 
 function listDwarfPlanets(req, res) {
@@ -21,10 +22,16 @@ function listPlanetarySystemDwarfPlanets(req, res) {
 
 function createDwarfPlanet(req, res) {
   T.dwarf_planets.new(req.swagger.params.planetarySystemId.value, req.swagger.params.dwarfPlanet.value)
-  				 .then(data => res.json(data));
+  				       .then(data => res.json(data));
 }
 
 function getDwarfPlanet(req, res) {
   T.dwarf_planets.get(req.swagger.params.planetarySystemId.value, req.swagger.params.dwarfPlanetId.value)
-  				 .then(data => res.json(data));
+  				       .then(data => res.json(data));
+}
+
+function updateDwarfPlanet(req, res) {
+  req.swagger.params.dwarfPlanet.value.id = req.swagger.params.dwarfPlanetId.value;
+  T.dwarf_planets.update(req.swagger.params.planetarySystemId.value, req.swagger.params.dwarfPlanet.value)
+                 .then(data => res.json(data));
 }

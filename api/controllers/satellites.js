@@ -8,7 +8,8 @@ module.exports = {
   listSatellites: listSatellites,
   listPlanetSatellites: listPlanetSatellites,
   createSatellite: createSatellite,
-  getSatellite: getSatellite
+  getSatellite: getSatellite,
+  updateSatellite: updateSatellite
 };
 
 function listSatellites(req, res) {
@@ -25,4 +26,9 @@ function createSatellite(req, res) {
 
 function getSatellite(req, res) {
   T.satellites.get(req.swagger.params.planetId.value, req.swagger.params.satelliteId.value).then(data => res.json(data));
+}
+
+function updateSatellite(req, res) {
+  req.swagger.params.satellite.value.id = req.swagger.params.satelliteId.value;
+  T.satellites.update(req.swagger.params.planetId.value, req.swagger.params.satellite.value).then(data => res.json(data));
 }

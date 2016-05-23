@@ -7,7 +7,8 @@ var T = require('../helpers/sql/tables');
 module.exports = {  
   listConstellations: listConstellations,
   createConstellation: createConstellation,
-  getConstellation: getConstellation
+  getConstellation: getConstellation,
+  updateConstellation: updateConstellation
 };
 
 function listConstellations(req, res) {
@@ -20,4 +21,9 @@ function getConstellation(req, res) {
 
 function createConstellation(req, res) {
   T.constellations.new(req.swagger.params.constellation.value).then(function(data) { res.json(data) });
+}
+
+function updateConstellation(req, res) {
+  req.swagger.params.constellation.value.id = req.swagger.params.constellationId.value;
+  T.constellations.update(req.swagger.params.constellation.value).then(data => res.json(data));
 }

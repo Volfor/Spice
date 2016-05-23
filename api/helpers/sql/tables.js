@@ -34,21 +34,22 @@ function without_fields(obj, fields) {
   return newObj;
 }
 
-function insert_child(parentTable, childTable, obj, parentFields, childFields) {
-  return knex.insert(without_fields(obj, childFields))
-             .into(parentTable.name)
-             .then(ids => {
-               obj.id = ids[0];
-               return parentTable.get(ids[0]);
-             })
-             .then(data => without_nulls(data, true))
-             .then(() => knex.insert(without_fields(obj, parentFields))
-                             .into(childTable.name))
-                             .then(ids => childTable.get(ids[0]))
-                             .then(data => without_nulls(data, true));
+/**
+ * Take only specified fields. Works even for items in Array.
+ */
+function take_fields(obj, fields) {
+  var newObj = obj instanceof Array ? [] : {};
+  for (var key in obj) {
+    if (obj[key] instanceof Object) {
+      newObj[key] = take_fields(obj[key], fields);
+    } else if (fields.indexOf(key) >= 0) {
+      newObj[key] = obj[key];
+    }
+  }
+  return newObj;
 }
 
-function insert_child_into(parentTable, childTable, intoId, obj, parentFields, childFields) {
+function insert_child(parentTable, childTable, intoId, obj, parentFields, childFields) {
   return knex.insert(without_fields(obj, childFields))
              .into(parentTable.name)
              .then(ids => {
@@ -57,9 +58,9 @@ function insert_child_into(parentTable, childTable, intoId, obj, parentFields, c
              })
              .then(data => without_nulls(data, true))
              .then(() => knex.insert(without_fields(obj, parentFields))
-                             .into(childTable.name))
-                             .then(ids => childTable.get(intoId, ids[0]))
-                             .then(data => without_nulls(data, true));
+                             .into(childTable.name)
+                             .then(ids => intoId ? childTable.get(intoId, ids[0]) : childTable.get(ids[0]))
+                             .then(data => without_nulls(data, true)));
 }
 
 function insert_planetoid(baseTable, planetoidTable, childTable, planetarySystemId, obj, baseFields, planetoidFields, childFields) {
@@ -114,6 +115,39 @@ function insert_satellite(baseTable, planetoidTable, childTable, planetId, obj, 
                                             .then(ids => childTable.get(planetId, ids[0]))
                                             .then(data => without_nulls(data, true)))
              );
+}
+
+function update_child(parentTable, childTable, intoId, obj, parentFields, childFields) {
+  return knex.where(parentTable.name + ".id", obj.id)
+              .update(without_nulls(take_fields(obj, parentFields)))
+              .table(parentTable.name)
+              .then(affectedRows => parentTable.get(obj.id))
+              .then(data => without_nulls(data, true))
+              .then(() => knex.where(childTable.name + ".id", obj.id)
+                          .update(without_nulls(take_fields(obj, childFields)))
+                          .table(childTable.name)
+                          .then(affectedRows => intoId ? childTable.get(intoId, obj.id) : childTable.get(obj.id))
+                          .then(data => without_nulls(data, true)));
+}
+
+function update_planetoid(baseTable, planetoidTable, childTable, intoId, obj, baseFields, planetoidFields, childFields) {
+  var planetoidFields_ = planetoidFields;
+  remove(planetoidFields_, "id");
+  return knex.where(baseTable.name + ".id", obj.id)
+             .update(without_nulls(take_fields(obj, baseFields)))
+             .table(baseTable.name)
+             .then(affectedRows => baseTable.get(obj.id))
+             .then(data => without_nulls(data, true))
+             .then(() => knex.where(planetoidTable.name + ".id", obj.id)
+                             .update(without_nulls(take_fields(obj, planetoidFields_)))
+                             .table(planetoidTable.name)
+                             .then(affectedRows => planetoidTable.get(obj.id))
+                             .then(data => without_nulls(data, true))
+                             .then(() => knex.where(childTable.name + ".id", obj.id)
+                                             .update(without_nulls(take_fields(obj, childFields)))
+                                             .table(childTable.name)
+                                             .then(affectedRows => childTable.get(intoId, obj.id))
+                                             .then(data => without_nulls(data, true))));
 }
 
 function get_with_id(table, id) {
@@ -209,9 +243,11 @@ var T = {
     new: constellation => {
       var baseFields_ = baseFields;
       baseFields_.push("stars");
-      return insert_child(T.celestial_objects, T.constellations, constellation, baseFields_, 
+      return insert_child(T.celestial_objects, T.constellations, null, constellation, baseFields_, 
                         ["id", "limits", "hill_sphere", "stars"]);
     },   
+    update: constellation => update_child(T.celestial_objects, T.constellations, null, constellation, baseFields, 
+                                          ["limits", "hill_sphere"]),
     get: id => {
       var query;
       if (id) {
@@ -251,8 +287,13 @@ var T = {
     },
     new: (constellationId, star) => {
       star.constellation_id = constellationId;
-      return insert_child_into(T.celestial_objects, T.stars, constellationId, star, baseFields, T.stars.fields);      
+      return insert_child(T.celestial_objects, T.stars, constellationId, star, baseFields, T.stars.fields);      
     }, 
+    update: (constellationId, star) => {
+      childFields_ = T.stars.fields;
+      remove(childFields_, "id");
+      return update_child(T.celestial_objects, T.stars, constellationId, star, baseFields, childFields_);
+    },
     get: (constellationId, starId) => {
       var query;
       if (constellationId) {
@@ -297,8 +338,13 @@ var T = {
     },   
     new: (constellationId, nebula) => {
       nebula.constellation_id = constellationId;
-      return insert_child_into(T.celestial_objects, T.nebulas, constellationId, nebula, baseFields, T.nebulas.fields);
-    },           
+      return insert_child(T.celestial_objects, T.nebulas, constellationId, nebula, baseFields, T.nebulas.fields);
+    },
+    update: (constellationId, nebula) => {
+      childFields_ = T.nebulas.fields;
+      remove(childFields_, "id");
+      return update_child(T.celestial_objects, T.nebulas, constellationId, nebula, baseFields, childFields_);
+    },
     get: (constellationId, nebulaId) => {
       var query;
       if (constellationId) {
@@ -338,7 +384,12 @@ var T = {
 
       table.primary("id");
     },          
-    new: galaxy => insert_child(T.celestial_objects, T.galaxies, galaxy, baseFields, T.galaxies.fields),
+    new: galaxy => insert_child(T.celestial_objects, T.galaxies, null, galaxy, baseFields, T.galaxies.fields),
+    update: galaxy => {
+      childFields_ = T.galaxies.fields;
+      remove(childFields_, "id");
+      return update_child(T.celestial_objects, T.galaxies, null, galaxy, baseFields, childFields_);
+    },
     get: id => {
       var query;
       if (id) {
@@ -372,8 +423,13 @@ var T = {
     },  
     new: (galaxyId, planetarySystem) => {
       planetarySystem.galaxy_id = galaxyId;
-      return insert_child_into(T.celestial_objects, T.planetary_systems, galaxyId, planetarySystem, baseFields, 
+      return insert_child(T.celestial_objects, T.planetary_systems, galaxyId, planetarySystem, baseFields, 
                                T.planetary_systems.fields);
+    },
+    update: (galaxyId, planetarySystem) => {
+      childFields_ = T.planetary_systems.fields;
+      remove(childFields_, "id");
+      return update_child(T.celestial_objects, T.planetary_systems, galaxyId, planetarySystem, baseFields, childFields_);
     },
     get: (galaxyId, planetarySystemId) => {
       var query;
@@ -437,6 +493,8 @@ var T = {
     },
     new: (planetarySystemId, planet) => insert_planetoid(T.celestial_objects, T.planetoids, T.planets, 
                 planetarySystemId, planet, baseFields, T.planetoids.fields, T.planets.fields),
+    update: (planetarySystemId, planet) => update_planetoid(T.celestial_objects, T.planetoids, T.planets, 
+                planetarySystemId, planet, baseFields, T.planetoids.fields, ["day"]),
     get: (planetarySystemId, planetId) => {
       var query;
       if (planetarySystemId) {
@@ -474,6 +532,8 @@ var T = {
     },
     new: (planetarySystemId, dwarfPlanet) => insert_planetoid(T.celestial_objects, T.planetoids, T.dwarf_planets,
                 planetarySystemId, dwarfPlanet, baseFields, T.planetoids.fields, T.dwarf_planets.fields),
+    update: (planetarySystemId, dwarfPlanet) => update_planetoid(T.celestial_objects, T.planetoids, T.dwarf_planets, 
+                planetarySystemId, dwarfPlanet, baseFields, T.planetoids.fields, ["mean_anomaly"]),
     get: (planetarySystemId, dwarfPlanetId) => {
       var query;
       if (planetarySystemId) {
@@ -512,6 +572,8 @@ var T = {
     },
     new: (planetarySystemId, asteroid) => insert_planetoid(T.celestial_objects, T.planetoids, T.asteroids,
                 planetarySystemId, asteroid, baseFields, T.planetoids.fields, T.asteroids.fields),
+    update: (planetarySystemId, asteroid) => update_planetoid(T.celestial_objects, T.planetoids, T.asteroids, 
+                planetarySystemId, asteroid, baseFields, T.planetoids.fields, ["mean_anomaly", "snow_line"]),
     get: (planetarySystemId, asteroidId) => {
       var query;
       if (planetarySystemId) {
@@ -549,6 +611,8 @@ var T = {
     }, 
     new: (planetarySystemId, comet) => insert_planetoid(T.celestial_objects, T.planetoids, T.comets, 
                 planetarySystemId, comet, baseFields, T.planetoids.fields, T.comets.fields),
+    update: (planetarySystemId, comet) => update_planetoid(T.celestial_objects, T.planetoids, T.comets, 
+                planetarySystemId, comet, baseFields, T.planetoids.fields, ["epoch"]),
     get: (planetarySystemId, cometId) => {
       var query;
       if (planetarySystemId) {
@@ -587,6 +651,11 @@ var T = {
       satellite.whose_satellite = planetId;
       return insert_satellite(T.celestial_objects, T.planetoids, T.satellites, planetId, satellite,
                               baseFields, T.planetoids.fields, T.satellites.fields);
+    },
+    update: (planetId, satellite) => {      
+      satellite.whose_satellite = planetId;
+      return update_planetoid(T.celestial_objects, T.planetoids, T.satellites, planetId, 
+                   satellite, baseFields, T.planetoids.fields, T.satellites.fields);
     },
     get: (planetId, satelliteId) => {
       var query;

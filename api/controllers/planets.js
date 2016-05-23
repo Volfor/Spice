@@ -8,7 +8,8 @@ module.exports = {
   listPlanets: listPlanets,
   listPlanetarySystemPlanets: listPlanetarySystemPlanets,
   createPlanet: createPlanet,
-  getPlanet: getPlanet
+  getPlanet: getPlanet,
+  updatePlanet: updatePlanet
 };
 
 function listPlanets(req, res) {
@@ -25,5 +26,11 @@ function createPlanet(req, res) {
 
 function getPlanet(req, res) {
   T.planets.get(req.swagger.params.planetarySystemId.value, req.swagger.params.planetId.value)
-  		   .then(data => res.json(data));
+  		     .then(data => res.json(data));
+}
+
+function updatePlanet(req, res) {
+  req.swagger.params.planet.value.id = req.swagger.params.planetId.value;
+  T.planets.update(req.swagger.params.planetarySystemId.value, req.swagger.params.planet.value)
+           .then(data => res.json(data));
 }

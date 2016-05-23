@@ -8,7 +8,8 @@ module.exports = {
   listPlanetarySystems: listPlanetarySystems,
   listGalaxyPlanetarySystems: listGalaxyPlanetarySystems,
   createPlanetarySystem: createPlanetarySystem,
-  getPlanetarySystem: getPlanetarySystem
+  getPlanetarySystem: getPlanetarySystem,
+  updatePlanetarySystem: updatePlanetarySystem
 };
 
 function listPlanetarySystems(req, res) {
@@ -21,10 +22,16 @@ function listGalaxyPlanetarySystems(req, res) {
 
 function createPlanetarySystem(req, res) {
   T.planetary_systems.new(req.swagger.params.galaxyId.value, req.swagger.params.planetarySystem.value)
-  					 .then(data => res.json(data));
+  					         .then(data => res.json(data));
 }
 
 function getPlanetarySystem(req, res) {
   T.planetary_systems.get(req.swagger.params.galaxyId.value, req.swagger.params.planetarySystemId.value)
-  					 .then(data => res.json(data));
+  					         .then(data => res.json(data));
+}
+
+function updatePlanetarySystem(req, res) {
+  req.swagger.params.planetarySystem.value.id = req.swagger.params.planetarySystemId.value;
+  T.planetary_systems.update(req.swagger.params.galaxyId.value, req.swagger.params.planetarySystem.value)
+                     .then(data => res.json(data));
 }

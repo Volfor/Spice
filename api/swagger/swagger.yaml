@@ -113,24 +113,6 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
-            
-  /planetoids:
-    x-swagger-router-controller: objects
-    get:
-      operationId: listPlanetoids
-      description: |
-        Gets all planetoids available in catalog.
-      responses:
-        "200":
-          description: Success
-          schema:
-            type: array
-            items:
-              $ref: "#/definitions/Planetoid"
-        default:
-          description: Error
-          schema:
-            $ref: "#/definitions/ErrorResponse"
 
   #Constellations
   /objects/constellations:
@@ -184,6 +166,28 @@ paths:
       operationId: getConstellation
       description: |
         Gets a constellation with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Constellation"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    patch:
+      tags:
+        - constellation
+      operationId: updateConstellation
+      description: |
+        Updates a constelation with a new data.
+      parameters:
+        - in: body
+          name: constellation
+          description: The updated constellation.
+          required: true
+          schema:
+            $ref: "#/definitions/Constellation"
       responses:
         "200":
           description: Success
@@ -277,6 +281,28 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    patch:
+      tags:
+        - star
+      operationId: updateStar
+      description: |
+        Updates a star with a new data.
+      parameters:
+        - in: body
+          name: star
+          description: The updated star.
+          required: true
+          schema:
+            $ref: "#/definitions/Star"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Star"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
             
   # Nebulas
   /objects/nebulas:
@@ -361,6 +387,28 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    patch:
+      tags:
+        - nebula
+      operationId: updateNebula
+      description: |
+        Updates a nebula with a new data.
+      parameters:
+        - in: body
+          name: nebula
+          description: The updated nebula.
+          required: true
+          schema:
+            $ref: "#/definitions/Nebula"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Nebula"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
             
   # Galaxies
   /objects/galaxies:
@@ -414,6 +462,28 @@ paths:
       operationId: getGalaxy
       description: |
         Gets a galaxy with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Galaxy"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    patch:
+      tags:
+        - galaxy
+      operationId: updateGalaxy
+      description: |
+        Updates a galaxy with a new data.
+      parameters:
+        - in: body
+          name: galaxy
+          description: The updated galaxy.
+          required: true
+          schema:
+            $ref: "#/definitions/Galaxy"
       responses:
         "200":
           description: Success
@@ -507,6 +577,28 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    patch:
+      tags:
+        - planetary system
+      operationId: updatePlanetarySystem
+      description: |
+        Updates a planetary system with a new data.
+      parameters:
+        - in: body
+          name: planetarySystem
+          description: The updated planetary system.
+          required: true
+          schema:
+            $ref: "#/definitions/PlanetarySystem"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/PlanetarySystem"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
     
   # Planets
   /objects/planets:
@@ -582,6 +674,28 @@ paths:
       operationId: getPlanet
       description: |
         Gets a planet with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Planet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    patch:
+      tags:
+        - planet
+      operationId: updatePlanet
+      description: |
+        Updates a planet with a new data.
+      parameters:
+        - in: body
+          name: planet
+          description: The updated planet.
+          required: true
+          schema:
+            $ref: "#/definitions/Planet"
       responses:
         "200":
           description: Success
@@ -675,7 +789,29 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
-  
+    patch:
+      tags:
+        - dwarf planet
+      operationId: updateDwarfPlanet
+      description: |
+        Updates a dwarf planet with a new data.
+      parameters:
+        - in: body
+          name: dwarfPlanet
+          description: The updated dwarf planet.
+          required: true
+          schema:
+            $ref: "#/definitions/DwarfPlanet"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/DwarfPlanet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"  
+          
   # Asteroids
   /objects/asteroids:
     x-swagger-router-controller: asteroids
@@ -750,6 +886,28 @@ paths:
       operationId: getAsteroid
       description: |
         Gets a asteroid with a given identifier.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Asteroid"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    patch:
+      tags:
+        - asteroid
+      operationId: updateAsteroid
+      description: |
+        Updates a asteroid with a new data.
+      parameters:
+        - in: body
+          name: asteroid
+          description: The updated asteroid.
+          required: true
+          schema:
+            $ref: "#/definitions/Asteroid"
       responses:
         "200":
           description: Success
@@ -843,6 +1001,28 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    patch:
+      tags:
+        - comet
+      operationId: updateComet
+      description: |
+        Updates a comet with a new data.
+      parameters:
+        - in: body
+          name: comet
+          description: The updated comet.
+          required: true
+          schema:
+            $ref: "#/definitions/Comet"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Comet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
             
   # Satellites
   /objects/satellites:
@@ -927,7 +1107,28 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
-  
+    patch:
+      tags:
+        - satellite
+      operationId: updateSatellite
+      description: |
+        Updates a satellite with a new data.
+      parameters:
+        - in: body
+          name: satellite
+          description: The updated satellite.
+          required: true
+          schema:
+            $ref: "#/definitions/Satellite"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Satellite"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
           
   /swagger:
     x-swagger-pipe: swagger_raw

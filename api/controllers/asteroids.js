@@ -8,7 +8,8 @@ module.exports = {
   listAsteroids: listAsteroids,
   listPlanetarySystemAsteroids: listPlanetarySystemAsteroids,
   createAsteroid: createAsteroid,
-  getAsteroid: getAsteroid
+  getAsteroid: getAsteroid,
+  updateAsteroid: updateAsteroid
 };
 
 function listAsteroids(req, res) {
@@ -21,10 +22,16 @@ function listPlanetarySystemAsteroids(req, res) {
 
 function createAsteroid(req, res) {
   T.asteroids.new(req.swagger.params.planetarySystemId.value, req.swagger.params.asteroid.value)
-  			 .then(data => res.json(data));
+  			     .then(data => res.json(data));
 }
 
 function getAsteroid(req, res) {
   T.asteroids.get(req.swagger.params.planetarySystemId.value, req.swagger.params.asteroidId.value)
-  			 .then(data => res.json(data));
+  			     .then(data => res.json(data));
+}
+
+function updateAsteroid(req, res) {
+  req.swagger.params.asteroid.value.id = req.swagger.params.asteroidId.value;
+  T.asteroids.update(req.swagger.params.planetarySystemId.value, req.swagger.params.asteroid.value)
+             .then(data => res.json(data));
 }

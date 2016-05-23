@@ -6,8 +6,9 @@ var T = require('../helpers/sql/tables');
 
 module.exports = {  
   listGalaxies: listGalaxies,
+  createGalaxy: createGalaxy,
   getGalaxy: getGalaxy,
-  createGalaxy: createGalaxy
+  updateGalaxy: updateGalaxy
 };
 
 function listGalaxies(req, res) {
@@ -20,4 +21,9 @@ function getGalaxy(req, res) {
 
 function createGalaxy(req, res) {
   T.galaxies.new(req.swagger.params.galaxy.value).then(data => res.json(data));
+}
+
+function updateGalaxy(req, res) {
+  req.swagger.params.galaxy.value.id = req.swagger.params.galaxyId.value;
+  T.galaxies.update(req.swagger.params.galaxy.value).then(data => res.json(data));
 }
