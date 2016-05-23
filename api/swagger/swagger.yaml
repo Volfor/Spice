@@ -180,7 +180,7 @@ paths:
         - constellation
       operationId: updateConstellation
       description: |
-        Updates a constelation with a new data.
+        Updates a constellation with a new data.
       parameters:
         - in: body
           name: constellation
@@ -193,6 +193,21 @@ paths:
           description: Success
           schema:
             $ref: "#/definitions/Constellation"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - constellation
+      operationId: deleteConstellation
+      description: |
+        Deletes a constellation.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
         default:
           description: Error
           schema:
@@ -303,6 +318,21 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - star
+      operationId: deleteStar
+      description: |
+        Deletes a star.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
             
   # Nebulas
   /objects/nebulas:
@@ -409,6 +439,21 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - nebula
+      operationId: deleteNebula
+      description: |
+        Deletes a nebula.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
             
   # Galaxies
   /objects/galaxies:
@@ -489,6 +534,21 @@ paths:
           description: Success
           schema:
             $ref: "#/definitions/Galaxy"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - galaxy
+      operationId: deleteGalaxy
+      description: |
+        Deletes a galaxy.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
         default:
           description: Error
           schema:
@@ -599,6 +659,21 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - planetary system
+      operationId: deletePlanetarySystem
+      description: |
+        Deletes a planetary system.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
     
   # Planets
   /objects/planets:
@@ -701,6 +776,21 @@ paths:
           description: Success
           schema:
             $ref: "#/definitions/Planet"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - planet
+      operationId: deletePlanet
+      description: |
+        Deletes a planet.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
         default:
           description: Error
           schema:
@@ -811,6 +901,21 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"  
+    delete:
+      tags:
+        - dwarf planet
+      operationId: deleteDwarfPlanet
+      description: |
+        Deletes a swarf planet.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
           
   # Asteroids
   /objects/asteroids:
@@ -913,6 +1018,21 @@ paths:
           description: Success
           schema:
             $ref: "#/definitions/Asteroid"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - asteroid
+      operationId: deleteAsteroid
+      description: |
+        Deletes a asteroid.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
         default:
           description: Error
           schema:
@@ -1023,6 +1143,21 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - comet
+      operationId: deleteComet
+      description: |
+        Deletes a comet.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
             
   # Satellites
   /objects/satellites:
@@ -1125,6 +1260,21 @@ paths:
           description: Success
           schema:
             $ref: "#/definitions/Satellite"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - satellite
+      operationId: deleteSatellite
+      description: |
+        Deletes a satellite.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
         default:
           description: Error
           schema:
@@ -1388,7 +1538,16 @@ definitions:
     type: object
     allOf:
       - $ref: "#/definitions/Planetoid"
-          
+  Success:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      fields:
+        type: string
   ErrorResponse:
     required:
       - message

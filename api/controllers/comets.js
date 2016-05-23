@@ -9,7 +9,8 @@ module.exports = {
   listPlanetarySystemComets: listPlanetarySystemComets,
   createComet: createComet,
   getComet: getComet,
-  updateComet: updateComet
+  updateComet: updateComet,
+  deleteComet: deleteComet
 };
 
 function listComets(req, res) {
@@ -32,4 +33,8 @@ function updateComet(req, res) {
   req.swagger.params.comet.value.id = req.swagger.params.cometId.value;
   T.comets.update(req.swagger.params.planetarySystemId.value, req.swagger.params.comet.value)
           .then(data => res.json(data));
+}
+
+function deleteComet(req, res) {
+  T.comets.remove(req.swagger.params.cometId.value).then(data => res.json({message: "Success"}));
 }

@@ -9,7 +9,8 @@ module.exports = {
   listPlanetarySystemAsteroids: listPlanetarySystemAsteroids,
   createAsteroid: createAsteroid,
   getAsteroid: getAsteroid,
-  updateAsteroid: updateAsteroid
+  updateAsteroid: updateAsteroid,
+  deleteAsteroid: deleteAsteroid
 };
 
 function listAsteroids(req, res) {
@@ -34,4 +35,8 @@ function updateAsteroid(req, res) {
   req.swagger.params.asteroid.value.id = req.swagger.params.asteroidId.value;
   T.asteroids.update(req.swagger.params.planetarySystemId.value, req.swagger.params.asteroid.value)
              .then(data => res.json(data));
+}
+
+function deleteAsteroid(req, res) {
+  T.asteroids.remove(req.swagger.params.asteroidId.value).then(data => res.json({message: "Success"}));
 }

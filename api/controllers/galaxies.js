@@ -8,7 +8,8 @@ module.exports = {
   listGalaxies: listGalaxies,
   createGalaxy: createGalaxy,
   getGalaxy: getGalaxy,
-  updateGalaxy: updateGalaxy
+  updateGalaxy: updateGalaxy,
+  deleteGalaxy: deleteGalaxy
 };
 
 function listGalaxies(req, res) {
@@ -26,4 +27,8 @@ function createGalaxy(req, res) {
 function updateGalaxy(req, res) {
   req.swagger.params.galaxy.value.id = req.swagger.params.galaxyId.value;
   T.galaxies.update(req.swagger.params.galaxy.value).then(data => res.json(data));
+}
+
+function deleteGalaxy(req, res) {
+  T.galaxies.remove(req.swagger.params.galaxyId.value).then(data => res.json({message: "Success"}));
 }

@@ -68,8 +68,8 @@ function insert_planetoid(baseTable, planetoidTable, childTable, planetarySystem
   var baseAndChildFields = baseFields.concat(childFields);
   var baseAndPlanetoidFields = baseFields.concat(planetoidFields);
   
-  remove(baseAndChildFields, 'id');
-  remove(baseAndPlanetoidFields, 'id');
+  removeFromArray(baseAndChildFields, 'id');
+  removeFromArray(baseAndPlanetoidFields, 'id');
     
   return knex.insert(without_fields(obj, planetoidAndChildFields))
              .into(baseTable.name)
@@ -96,8 +96,8 @@ function insert_satellite(baseTable, planetoidTable, childTable, planetId, obj, 
   var baseAndChildFields = baseFields.concat(childFields);
   var baseAndPlanetoidFields = baseFields.concat(planetoidFields);
   
-  remove(baseAndChildFields, 'id');
-  remove(baseAndPlanetoidFields, 'id');
+  removeFromArray(baseAndChildFields, 'id');
+  removeFromArray(baseAndPlanetoidFields, 'id');
     
   return knex.insert(without_fields(obj, planetoidAndChildFields))
              .into(baseTable.name)
@@ -132,7 +132,7 @@ function update_child(parentTable, childTable, intoId, obj, parentFields, childF
 
 function update_planetoid(baseTable, planetoidTable, childTable, intoId, obj, baseFields, planetoidFields, childFields) {
   var planetoidFields_ = planetoidFields;
-  remove(planetoidFields_, "id");
+  removeFromArray(planetoidFields_, "id");
   return knex.where(baseTable.name + ".id", obj.id)
              .update(without_nulls(take_fields(obj, baseFields)))
              .table(baseTable.name)
@@ -160,7 +160,110 @@ function get_with_id(table, id) {
   return query.then(data => without_nulls(data, true));
 }
 
-function remove(arr, what) {
+function get_child(parentTable, childTable, id) {
+  var query;
+      if (id) {
+        query = knex.first()
+                    .from(parentTable.name)
+                    .innerJoin(childTable.name, parentTable.name + ".id", childTable.name + ".id")
+                    .where(childTable.name + ".id", id);
+      } else {        
+        query = knex.select()
+                    .from(parentTable.name)
+                    .innerJoin(childTable.name, parentTable.name + ".id", childTable.name + ".id");
+      }
+      return query.then(data => without_nulls(data, true));
+}
+
+function get_child_from(parentTable, childTable, fromKey, fromId, childId) {
+  var query;
+      if (fromId) {
+        if (childId) {
+          query = knex.first()
+                      .from(parentTable.name)
+                      .innerJoin(childTable.name, parentTable.name + ".id", childTable.name + ".id")
+                      .where(childTable.name + ".id", childId);
+        } else {
+          query = knex.select()
+                      .from(parentTable.name)
+                      .innerJoin(childTable.name, parentTable.name + ".id", childTable.name + ".id")
+                      .where(fromKey, fromId);
+        }
+      } else {        
+        query = knex.select()
+                    .from(parentTable.name)
+                    .innerJoin(childTable.name, parentTable.name + ".id", childTable.name + ".id");
+      }
+      return query.then(data => without_nulls(data, true));
+}
+
+function get_planetoid(parentTable, planetoidTable, childTable, fromKey, fromId, childId) {
+  var query;
+      if (fromId) {
+        if (childId) {
+          query = knex.first()
+                      .from(parentTable.name)
+                      .innerJoin(planetoidTable.name, parentTable.name + ".id", planetoidTable.name + ".id")
+                      .innerJoin(childTable.name, planetoidTable.name + ".id", childTable.name + ".id")
+                      .where(childTable.name + ".id", childId);
+        } else {
+          query = knex.select()
+                      .from(parentTable.name)
+                      .innerJoin(planetoidTable.name, parentTable.name + ".id", planetoidTable.name + ".id")
+                      .innerJoin(childTable.name, planetoidTable.name + ".id", childTable.name + ".id")
+                      .where(fromKey, fromId);
+        }
+      } else {        
+        query = knex.select()
+                    .from(parentTable.name)
+                    .innerJoin(planetoidTable.name, parentTable.name + ".id", planetoidTable.name + ".id")
+                    .innerJoin(childTable.name, planetoidTable.name + ".id", childTable.name + ".id");
+      }
+      return query.then(data => without_nulls(data, true));
+}
+
+function remove_with_id(parentTable, childTable, id) {
+  var query;
+  if (id) {
+    query = knex.del()
+                .from(childTable.name)
+                .where(childTable.name + ".id", id)
+                .then(() => knex.del()
+                                .from(parentTable.name)
+                                .where(parentTable.name + ".id", id));
+  } else {
+    query = knex.del()
+                .from(childTable.name)
+                .then(() => knex.del()
+                                .from(parentTable.name));
+  }
+  return query.then(affectedRows => ({"message": "success"}));
+}
+
+function remove_planetoid(parentTable, planetoidTable, childTable, id) {
+  var query;
+  if (id) {
+    query = knex.del()
+                .from(childTable.name)
+                .where(childTable.name + ".id", id)
+                .then(() => knex.del()
+                                .from(planetoidTable.name)
+                                .where(planetoidTable.name + ".id", id)
+                                .then(() => knex.del()
+                                                .from(parentTable.name)
+                                                .where(parentTable.name + ".id", id)));
+  } else {
+    query = knex.del()
+                .from(childTable.name)
+                .then(() => knex.del()
+                                .from(planetoidTable.name)
+                                .then(() => knex.del()
+                                                .from(parentTable.name)));
+  }
+  return query.then(affectedRows => ({"message": "success"}));
+}
+
+function removeFromArray(arr, what) {
     var found = arr.indexOf(what);
 
     while (found !== -1) {
@@ -247,22 +350,11 @@ var T = {
                         ["id", "limits", "hill_sphere", "stars"]);
     },   
     update: constellation => update_child(T.celestial_objects, T.constellations, null, constellation, baseFields, 
-                                          ["limits", "hill_sphere"]),
-    get: id => {
-      var query;
-      if (id) {
-        query = knex.first()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.constellations.name, T.celestial_objects.name + ".id", T.constellations.name + ".id")
-                    .where(T.constellations.name + ".id", id);
-      } else {        
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.constellations.name, T.celestial_objects.name + ".id", T.constellations.name + ".id");
-      }
-      return query.then(data => without_nulls(data, true));
-    },
+                ["limits", "hill_sphere"]),
+    get: id => get_child(T.celestial_objects, T.constellations, id),
+    remove: id =>  remove_with_id(T.celestial_objects, T.constellations, id),
   },
+
   stars: {
     name: "Stars",
     fields: ["id", "right_ascension", "declination", "apparent_magnitude", "distance", "radial_velocity", 
@@ -291,30 +383,11 @@ var T = {
     }, 
     update: (constellationId, star) => {
       childFields_ = T.stars.fields;
-      remove(childFields_, "id");
+      removeFromArray(childFields_, "id");
       return update_child(T.celestial_objects, T.stars, constellationId, star, baseFields, childFields_);
     },
-    get: (constellationId, starId) => {
-      var query;
-      if (constellationId) {
-        if (starId) {
-          query = knex.first()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.stars.name, T.celestial_objects.name + ".id", T.stars.name + ".id")
-                      .where(T.stars.name + ".id", starId);
-        } else {
-          query = knex.select()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.stars.name, T.celestial_objects.name + ".id", T.stars.name + ".id")
-                      .where("constellation_id", constellationId);
-        }        
-      } else {
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.stars.name, T.celestial_objects.name + ".id", T.stars.name + ".id");
-      }      
-      return query.then(data => without_nulls(data, true));
-    },
+    get: (constellationId, starId) => get_child_from(T.celestial_objects, T.stars, "constellation_id", constellationId, starId),
+    remove: id =>  remove_with_id(T.celestial_objects, T.stars, id),
   },
   nebulas: {
     name: "Nebulas",
@@ -342,30 +415,12 @@ var T = {
     },
     update: (constellationId, nebula) => {
       childFields_ = T.nebulas.fields;
-      remove(childFields_, "id");
+      removeFromArray(childFields_, "id");
       return update_child(T.celestial_objects, T.nebulas, constellationId, nebula, baseFields, childFields_);
     },
-    get: (constellationId, nebulaId) => {
-      var query;
-      if (constellationId) {
-        if (nebulaId) {
-          query = knex.first()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.nebulas.name, T.celestial_objects.name + ".id", T.nebulas.name + ".id")
-                      .where(T.nebulas.name + ".id", nebulaId);
-        } else {
-          query = knex.select()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.nebulas.name, T.celestial_objects.name + ".id", T.nebulas.name + ".id")
-                      .where("constellation_id", constellationId);
-        }        
-      } else {
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.nebulas.name, T.celestial_objects.name + ".id", T.nebulas.name + ".id");
-      }      
-      return query.then(data => without_nulls(data, true));
-    },    
+    get: (constellationId, nebulaId) => get_child_from(T.celestial_objects, T.nebulas, "constellation_id", 
+                constellationId, nebulaId),    
+    remove: id =>  remove_with_id(T.celestial_objects, T.nebulas, id),
   },
   galaxies: {
     name: "Galaxies",
@@ -386,23 +441,11 @@ var T = {
     new: galaxy => insert_child(T.celestial_objects, T.galaxies, null, galaxy, baseFields, T.galaxies.fields),
     update: galaxy => {
       childFields_ = T.galaxies.fields;
-      remove(childFields_, "id");
+      removeFromArray(childFields_, "id");
       return update_child(T.celestial_objects, T.galaxies, null, galaxy, baseFields, childFields_);
     },
-    get: id => {
-      var query;
-      if (id) {
-        query = knex.first()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.galaxies.name, T.celestial_objects.name + ".id", T.galaxies.name + ".id")
-                    .where(T.galaxies.name + ".id", id);
-      } else {
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.galaxies.name, T.celestial_objects.name + ".id", T.galaxies.name + ".id");
-      }     
-      return query.then(data => without_nulls(data, true));
-    },        
+    get: id => get_child(T.celestial_objects, T.galaxies, id),
+    remove: id =>  remove_with_id(T.celestial_objects, T.galaxies, id),
   },
   planetary_systems: {
     name: "Planetary_Systems",
@@ -423,37 +466,16 @@ var T = {
     new: (galaxyId, planetarySystem) => {
       planetarySystem.galaxy_id = galaxyId;
       return insert_child(T.celestial_objects, T.planetary_systems, galaxyId, planetarySystem, baseFields, 
-                               T.planetary_systems.fields);
+                T.planetary_systems.fields);
     },
     update: (galaxyId, planetarySystem) => {
       childFields_ = T.planetary_systems.fields;
-      remove(childFields_, "id");
+      removeFromArray(childFields_, "id");
       return update_child(T.celestial_objects, T.planetary_systems, galaxyId, planetarySystem, baseFields, childFields_);
     },
-    get: (galaxyId, planetarySystemId) => {
-      var query;
-      if (galaxyId) {
-        if (planetarySystemId) {
-          query = knex.first()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetary_systems.name, T.celestial_objects.name + ".id", 
-                                 T.planetary_systems.name + ".id")
-                      .where(T.planetary_systems.name + ".id", planetarySystemId);
-        } else {
-          query = knex.select()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetary_systems.name, T.celestial_objects.name + ".id", 
-                                 T.planetary_systems.name + ".id")
-                      .where("galaxy_id", galaxyId);
-        }        
-      } else {
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.planetary_systems.name, T.celestial_objects.name + ".id", 
-                               T.planetary_systems.name + ".id");
-      }      
-      return query.then(data => without_nulls(data, true));
-    }, 
+    get: (galaxyId, planetarySystemId) => get_child_from(T.celestial_objects, T.planetary_systems, "galaxy_id", 
+                galaxyId, planetarySystemId), 
+    remove: id =>  remove_with_id(T.celestial_objects, T.planetary_systems, id),
   },
   planetoids: {
     name: "Planetoids",
@@ -494,30 +516,9 @@ var T = {
                 planetarySystemId, planet, baseFields, T.planetoids.fields, T.planets.fields),
     update: (planetarySystemId, planet) => update_planetoid(T.celestial_objects, T.planetoids, T.planets, 
                 planetarySystemId, planet, baseFields, T.planetoids.fields, ["day"]),
-    get: (planetarySystemId, planetId) => {
-      var query;
-      if (planetarySystemId) {
-        if (planetId) {
-          query = knex.first()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.planets.name, T.planetoids.name + ".id", T.planets.name + ".id")
-                      .where(T.planets.name + ".id", planetId);
-        } else {
-          query = knex.select()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.planets.name, T.planetoids.name + ".id", T.planets.name + ".id")
-                      .where("planetary_system_id", planetarySystemId);
-        }  
-      } else {
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                    .innerJoin(T.planets.name, T.planetoids.name + ".id", T.planets.name + ".id");
-      }      
-      return query.then(data => without_nulls(data, true));
-    },     
+    get: (planetarySystemId, planetId) => get_planetoid(T.celestial_objects, T.planetoids, T.planets,
+                "planetary_system_id", planetarySystemId, planetId),
+    remove: id =>  remove_planetoid_test(T.celestial_objects, T.planetoids, T.planets, id),     
   },
   dwarf_planets: {
     name: "Dwarf_Planets",
@@ -533,30 +534,9 @@ var T = {
                 planetarySystemId, dwarfPlanet, baseFields, T.planetoids.fields, T.dwarf_planets.fields),
     update: (planetarySystemId, dwarfPlanet) => update_planetoid(T.celestial_objects, T.planetoids, T.dwarf_planets, 
                 planetarySystemId, dwarfPlanet, baseFields, T.planetoids.fields, ["mean_anomaly"]),
-    get: (planetarySystemId, dwarfPlanetId) => {
-      var query;
-      if (planetarySystemId) {
-        if (dwarfPlanetId) {
-          query = knex.first()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.dwarf_planets.name, T.planetoids.name + ".id", T.dwarf_planets.name + ".id")
-                      .where(T.dwarf_planets.name + ".id", dwarfPlanetId);
-        } else {
-          query = knex.select()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.dwarf_planets.name, T.planetoids.name + ".id", T.dwarf_planets.name + ".id")
-                      .where("planetary_system_id", planetarySystemId);
-        }
-      } else {
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                    .innerJoin(T.dwarf_planets.name, T.planetoids.name + ".id", T.dwarf_planets.name + ".id");
-      }
-      return query.then(data => without_nulls(data, true));
-    },
+    get: (planetarySystemId, dwarfPlanetId) => get_planetoid(T.celestial_objects, T.planetoids, T.dwarf_planets, 
+                "planetary_system_id", planetarySystemId, dwarfPlanetId),
+    remove: id =>  remove_planetoid_test(T.celestial_objects, T.planetoids, T.dwarf_planets, id),
   },
   asteroids: {
     name: "Asteroids",
@@ -573,30 +553,9 @@ var T = {
                 planetarySystemId, asteroid, baseFields, T.planetoids.fields, T.asteroids.fields),
     update: (planetarySystemId, asteroid) => update_planetoid(T.celestial_objects, T.planetoids, T.asteroids, 
                 planetarySystemId, asteroid, baseFields, T.planetoids.fields, ["mean_anomaly", "snow_line"]),
-    get: (planetarySystemId, asteroidId) => {
-      var query;
-      if (planetarySystemId) {
-        if (asteroidId) {
-          query = knex.first()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.asteroids.name, T.planetoids.name + ".id", T.asteroids.name + ".id")
-                      .where(T.asteroids.name + ".id", asteroidId);
-        } else {
-          query = knex.select()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.asteroids.name, T.planetoids.name + ".id", T.asteroids.name + ".id")
-                      .where("planetary_system_id", planetarySystemId);
-        }
-      } else {
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                    .innerJoin(T.asteroids.name, T.planetoids.name + ".id", T.asteroids.name + ".id");
-      }
-      return query.then(data => without_nulls(data, true));
-    },    
+    get: (planetarySystemId, asteroidId) => get_planetoid(T.celestial_objects, T.planetoids, T.asteroids, 
+                "planetary_system_id", planetarySystemId, asteroidId),    
+    remove: id =>  remove_planetoid_test(T.celestial_objects, T.planetoids, T.asteroids, id),
   },
   comets: {
     name: "Comets",
@@ -612,31 +571,9 @@ var T = {
                 planetarySystemId, comet, baseFields, T.planetoids.fields, T.comets.fields),
     update: (planetarySystemId, comet) => update_planetoid(T.celestial_objects, T.planetoids, T.comets, 
                 planetarySystemId, comet, baseFields, T.planetoids.fields, ["epoch"]),
-    get: (planetarySystemId, cometId) => {
-      var query;
-      if (planetarySystemId) {
-        if (cometId) {
-          query = knex.first()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.comets.name, T.planetoids.name + ".id", T.comets.name + ".id")
-                      .where(T.comets.name + ".id", cometId);
-        } else {
-          query = knex.select()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.comets.name, T.planetoids.name + ".id", T.comets.name + ".id")
-                      .where("planetary_system_id", planetarySystemId);
-        }
-      } else {
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", 
-                               T.planetoids.name + ".id")
-                    .innerJoin(T.comets.name, T.planetoids.name + ".id", T.comets.name + ".id");
-      }
-      return query.then(data => without_nulls(data, true));
-    },    
+    get: (planetarySystemId, cometId) => get_planetoid(T.celestial_objects, T.planetoids, T.comets, 
+                "planetary_system_id", planetarySystemId, cometId),    
+    remove: id =>  remove_planetoid_test(T.celestial_objects, T.planetoids, T.comets, id),
   },
   satellites: {
     name: "Satellites",
@@ -648,38 +585,17 @@ var T = {
     }, 
     new: (planetId, satellite) => {
       satellite.whose_satellite = planetId;
-      return insert_satellite(T.celestial_objects, T.planetoids, T.satellites, planetId, satellite,
-                              baseFields, T.planetoids.fields, T.satellites.fields);
+      return insert_satellite(T.celestial_objects, T.planetoids, T.satellites, planetId, satellite, baseFields, 
+                T.planetoids.fields, T.satellites.fields);
     },
     update: (planetId, satellite) => {      
       satellite.whose_satellite = planetId;
-      return update_planetoid(T.celestial_objects, T.planetoids, T.satellites, planetId, 
-                   satellite, baseFields, T.planetoids.fields, T.satellites.fields);
+      return update_planetoid(T.celestial_objects, T.planetoids, T.satellites, planetId, satellite, baseFields, 
+                T.planetoids.fields, T.satellites.fields);
     },
-    get: (planetId, satelliteId) => {
-      var query;
-      if (planetId) {
-        if (satelliteId) {
-          query = knex.first()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.satellites.name, T.planetoids.name + ".id", T.satellites.name + ".id")
-                      .where(T.satellites.name + ".id", satelliteId);
-        } else {
-          query = knex.select()
-                      .from(T.celestial_objects.name)
-                      .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                      .innerJoin(T.satellites.name, T.planetoids.name + ".id", T.satellites.name + ".id")
-                      .where("whose_satellite", planetId);
-        }
-      } else {
-        query = knex.select()
-                    .from(T.celestial_objects.name)
-                    .innerJoin(T.planetoids.name, T.celestial_objects.name + ".id", T.planetoids.name + ".id")
-                    .innerJoin(T.satellites.name, T.planetoids.name + ".id", T.satellites.name + ".id");
-      }
-      return query.then(data => without_nulls(data, true));
-    },     
+    get: (planetId, satelliteId) => get_planetoid(T.celestial_objects, T.planetoids, T.satellites, "whose_satellite",
+                planetId, satelliteId),     
+    remove: id =>  remove_planetoid_test(T.celestial_objects, T.planetoids, T.satellites, id),
   },
 
   /*

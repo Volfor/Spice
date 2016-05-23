@@ -9,7 +9,8 @@ module.exports = {
   listPlanetSatellites: listPlanetSatellites,
   createSatellite: createSatellite,
   getSatellite: getSatellite,
-  updateSatellite: updateSatellite
+  updateSatellite: updateSatellite,
+  deleteSatellite: deleteSatellite
 };
 
 function listSatellites(req, res) {
@@ -31,4 +32,8 @@ function getSatellite(req, res) {
 function updateSatellite(req, res) {
   req.swagger.params.satellite.value.id = req.swagger.params.satelliteId.value;
   T.satellites.update(req.swagger.params.planetId.value, req.swagger.params.satellite.value).then(data => res.json(data));
+}
+
+function deleteSatellite(req, res) {
+  T.satellites.remove(req.swagger.params.satelliteId.value).then(data => res.json({message: "Success"}));
 }

@@ -9,7 +9,8 @@ module.exports = {
   listGalaxyPlanetarySystems: listGalaxyPlanetarySystems,
   createPlanetarySystem: createPlanetarySystem,
   getPlanetarySystem: getPlanetarySystem,
-  updatePlanetarySystem: updatePlanetarySystem
+  updatePlanetarySystem: updatePlanetarySystem,
+  deletePlanetarySystem: deletePlanetarySystem
 };
 
 function listPlanetarySystems(req, res) {
@@ -34,4 +35,8 @@ function updatePlanetarySystem(req, res) {
   req.swagger.params.planetarySystem.value.id = req.swagger.params.planetarySystemId.value;
   T.planetary_systems.update(req.swagger.params.galaxyId.value, req.swagger.params.planetarySystem.value)
                      .then(data => res.json(data));
+}
+
+function deletePlanetarySystem(req, res) {
+  T.planetary_systems.remove(req.swagger.params.planetarySystemId.value).then(data => res.json({message: "Success"}));
 }

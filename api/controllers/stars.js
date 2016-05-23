@@ -9,7 +9,8 @@ module.exports = {
   listConstellationStars: listConstellationStars,
   createStar: createStar,
   getStar: getStar,
-  updateStar: updateStar
+  updateStar: updateStar,
+  deleteStar: deleteStar
 };
 
 function listStars(req, res) {
@@ -31,4 +32,8 @@ function getStar(req, res) {
 function updateStar(req, res) {
   req.swagger.params.star.value.id = req.swagger.params.starId.value;
   T.stars.update(req.swagger.params.constellationId.value, req.swagger.params.star.value).then(data => res.json(data));
+}
+
+function deleteStar(req, res) {
+  T.stars.remove(req.swagger.params.starId.value).then(data => res.json({message: "Success"}));
 }

@@ -9,7 +9,8 @@ module.exports = {
   listConstellationNebulas: listConstellationNebulas,  
   createNebula: createNebula,
   getNebula: getNebula,
-  updateNebula: updateNebula
+  updateNebula: updateNebula,
+  deleteNebula: deleteNebula
 };
 
 function listNebulas(req, res) {
@@ -32,4 +33,8 @@ function updateNebula(req, res) {
   req.swagger.params.nebula.value.id = req.swagger.params.nebulaId.value;
   T.nebulas.update(req.swagger.params.constellationId.value, req.swagger.params.nebula.value)
            .then(data => res.json(data));
+}
+
+function deleteNebula(req, res) {
+  T.nebulas.remove(req.swagger.params.nebulaId.value).then(data => res.json({message: "Success"}));
 }
