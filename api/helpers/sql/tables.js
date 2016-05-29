@@ -1,3 +1,7 @@
+'use strict';
+
+var Promise = require('bluebird');
+
 /**
  * Delete all null (or undefined) properties from an object.
  * Set 'recurse' to true if you also want to delete properties in nested objects.
@@ -277,7 +281,7 @@ var baseFields = ["name", "discoverer", "discovery_date", "discovery_place", "ag
 
 var T = {
   celestial_objects: {
-    name: "Celestial_Objects",
+    name: "celestial_objects",
     fields: ["id", "name", "discoverer", "discovery_date", "discovery_place", "age", "volume", "mass", "radius", 
              "surface_area", "mean_density", "whose_satellite"],
     init: table => {
@@ -292,55 +296,53 @@ var T = {
       table.float("radius");
       table.float("surface_area");
       table.float("mean_density");
-
       table.integer("whose_satellite")
+           .unsigned()
+           .notNullable()
            .references("id")
-           .inTable(T.celestial_objects.name);
-
-      table.timestamps();       
+           .inTable(T.celestial_objects.name);      
     },
     get: id => get_with_id(T.celestial_objects, id),    
   },
   images: {
-    name: "Images",
+    name: "images",
     fields: ["id", "spectrum", "shooting_date", "author", "telescope", "url"],
-
     init: table => {
       table.increments("id");
       table.float("spectrum");
       table.date("shooting_date");
       table.string("author");
       table.string("telescope");
-      table.string("url");
-
-      table.timestamps();
-    },    
+      table.string("url");         
+    },
   },
   image_object: {
-    name: "Image_Object",
+    name: "image_object",
     fields: ["image_id", "object_id"],
     init: table => {
       table.integer("image_id")
+           .unsigned()
+           .notNullable()
            .references("id")
            .inTable(T.images.name);
       table.integer("object_id")
+           .unsigned()
+           .notNullable()
            .references("id")
-           .inTable(T.celestial_objects.name);
-
-      table.timestamps();
+           .inTable(T.celestial_objects.name);    
 
       table.primary(["image_id", "object_id"]);
     },
   },
   constellations: {
-    name: "Constellations",
+    name: "constellations",
     fields: ["id", "limits", "hill_sphere"],
     foreignFields: ["stars"],
     init: table => {
       table.integer("id");
       table.string("limits");
-      table.string("hill_sphere");      
-      table.timestamps();      
+      table.string("hill_sphere");
+
       table.primary("id");
     },    
     new: constellation => {
@@ -354,9 +356,8 @@ var T = {
     get: id => get_child(T.celestial_objects, T.constellations, id),
     remove: id =>  remove_with_id(T.celestial_objects, T.constellations, id),
   },
-
   stars: {
-    name: "Stars",
+    name: "stars",
     fields: ["id", "right_ascension", "declination", "apparent_magnitude", "distance", "radial_velocity", 
              "luminosity", "effective_temperature", "constellation_id", "planetary_system_id"],
     init: table => {
@@ -367,13 +368,12 @@ var T = {
       table.float("distance");
       table.float("radial_velocity");
       table.float("luminosity");
-      table.float("effective_temperature");
-      
+      table.float("effective_temperature");      
       table.integer("constellation_id")
+           .unsigned()
+           .notNullable()
            .references("id")
            .inTable(T.constellations.name);
-
-      table.timestamps();      
 
       table.primary("id");
     },
@@ -390,7 +390,7 @@ var T = {
     remove: id =>  remove_with_id(T.celestial_objects, T.stars, id),
   },
   nebulas: {
-    name: "Nebulas",
+    name: "nebulas",
     fields: ["id", "hill_sphere", "distance", "snow_line", "visible_dimensions", "apparent_magnitude", 
              "constellation_id"],
     init: table => {
@@ -400,12 +400,11 @@ var T = {
       table.float("snow_line");
       table.float("visible_dimensions");
       table.float("apparent_magnitude");
-
       table.integer("constellation_id")
+           .unsigned()
+           .notNullable()
            .references("id")
-           .inTable(T.constellations.name);
-
-      table.timestamps();      
+           .inTable(T.constellations.name);      
 
       table.primary("id");
     },   
@@ -423,7 +422,7 @@ var T = {
     remove: id =>  remove_with_id(T.celestial_objects, T.nebulas, id),
   },
   galaxies: {
-    name: "Galaxies",
+    name: "galaxies",
     fields: ["id", "hill_sphere", "snow_line", "visible_dimensions", "surface_brightness", "distance", 
              "radial_velocity"],
     init: table => {
@@ -434,8 +433,7 @@ var T = {
       table.float("surface_brightness");
       table.float("distance");
       table.float("radial_velocity");
-
-      table.timestamps();      
+      
       table.primary("id");
     },          
     new: galaxy => insert_child(T.celestial_objects, T.galaxies, null, galaxy, baseFields, T.galaxies.fields),
@@ -448,18 +446,17 @@ var T = {
     remove: id =>  remove_with_id(T.celestial_objects, T.galaxies, id),
   },
   planetary_systems: {
-    name: "Planetary_Systems",
+    name: "planetary_systems",
     fields: ["id", "hill_sphere", "snow_line", "galaxy_id"],
     init: table => {
       table.integer("id");
       table.string("hill_sphere");
       table.float("snow_line");
-
       table.integer("galaxy_id")
+           .unsigned()
+           .notNullable()
            .references("id")
            .inTable(T.galaxies.name);
-
-      table.timestamps();
 
       table.primary("id");
     },  
@@ -478,7 +475,7 @@ var T = {
     remove: id =>  remove_with_id(T.celestial_objects, T.planetary_systems, id),
   },
   planetoids: {
-    name: "Planetoids",
+    name: "planetoids",
     fields: ["id", "semi_major_axis", "aphelion", "perihelion", "eccentricity", "orbital_inclination", "axial_tilt", 
              "rotation_period", "temperature", "planetary_system_id"],
     init: table => {
@@ -491,24 +488,22 @@ var T = {
       table.float("axial_tilt");
       table.float("rotation_period");
       table.float("temperature");
-
-      table.integer("planetary_system_id")      
+      table.integer("planetary_system_id")   
+           .unsigned()
+           .notNullable()
            .references("id")
            .inTable(T.planetary_systems.name);
-
-      table.timestamps();
 
       table.primary("id");
     },
     get: id => get_with_id(T.planetoids, id),
   },
   planets: {
-    name: "Planets",
+    name: "planets",
     fields: ["id", "day"],
     init: table => {
       table.integer("id");
-      table.float("day");
-      table.timestamps();
+      table.float("day");      
 
       table.primary("id");
     },
@@ -521,12 +516,11 @@ var T = {
     remove: id =>  remove_planetoid_test(T.celestial_objects, T.planetoids, T.planets, id),     
   },
   dwarf_planets: {
-    name: "Dwarf_Planets",
+    name: "dwarf_planets",
     fields: ["id", "mean_anomaly"],
     init: table => {
       table.integer("id");
-      table.float("mean_anomaly");
-      table.timestamps();
+      table.float("mean_anomaly");      
 
       table.primary("id");
     },
@@ -539,13 +533,12 @@ var T = {
     remove: id =>  remove_planetoid_test(T.celestial_objects, T.planetoids, T.dwarf_planets, id),
   },
   asteroids: {
-    name: "Asteroids",
+    name: "asteroids",
     fields: ["id", "mean_anomaly", "snow_line"],
     init: table => {
       table.integer("id");
       table.float("mean_anomaly");
-      table.float("snow_line");
-      table.timestamps();
+      table.float("snow_line");      
 
       table.primary("id");
     },
@@ -558,13 +551,12 @@ var T = {
     remove: id =>  remove_planetoid_test(T.celestial_objects, T.planetoids, T.asteroids, id),
   },
   comets: {
-    name: "Comets",
+    name: "comets",
     fields: ["id", "epoch"],
     init: table => {
       table.integer("id");
       table.float("epoch");
-      table.timestamps();
-
+      
       table.primary("id");
     }, 
     new: (planetarySystemId, comet) => insert_planetoid(T.celestial_objects, T.planetoids, T.comets, 
@@ -576,11 +568,11 @@ var T = {
     remove: id =>  remove_planetoid_test(T.celestial_objects, T.planetoids, T.comets, id),
   },
   satellites: {
-    name: "Satellites",
+    name: "satellites",
     fields: ["id"],
     init: table => {
       table.integer("id");
-      table.timestamps();
+
       table.primary("id");
     }, 
     new: (planetId, satellite) => {
@@ -602,18 +594,27 @@ var T = {
    * Global database functions
    */
   createAllTables: function(knex) {
+    var query = Promise.resolve(true);
     for (var key in T) {
       if (T.hasOwnProperty(key) && !(T[key] instanceof Function)) {
-        knex.schema.createTableIfNotExists(T[key].name, T[key].init).return(0)
+        let tbl = T[key];
+        if (tbl.clearOnInit) query = query.then(data => knex.schema.dropTableIfExists(tbl.name));
+        query = query.then(data => knex.schema.createTableIfNotExists(tbl.name, tbl.init));
+        if (tbl.afterInit) query = query.then(data => tbl.afterInit());
       }
     }
+    return query;
   },
   dropAllTables: function(knex) {
+    var query = Promise.resolve(true);
     for (var key in T) {
       if (T.hasOwnProperty(key) && !(T[key] instanceof Function)) {
-        knex.schema.dropTableIfExists(T[key].name).return(0);
+        query = query.then(data => knex.schema.dropTableIfExists(T[key].name));
+        let tbl = T[key];
+        query = query.then(data => knex.schema.dropTableIfExists(tbl.name));
       }
     }
+    return query;
   }
 }
 

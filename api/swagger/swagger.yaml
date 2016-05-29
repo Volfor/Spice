@@ -5,7 +5,7 @@ info:
   title: Spice
   description: Сatalog of astronomical objects.
     
-host: localhost:10010
+host: spice-app.herokuapp.com
 basePath: /
 schemes:
   - http

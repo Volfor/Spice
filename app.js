@@ -3,8 +3,15 @@
 var SwaggerExpress = require('swagger-express-mw');
 var app = require('express')();
 var cors = require('cors');
+var tables = require('./api/helpers/sql/tables');
 
 module.exports = app; // for testing
+
+var containsAll = function (original, array) {
+  return array.every(function(v,i) {
+    return original.indexOf(v) !== -1;
+  })
+}
 
 var config = {
   appRoot: __dirname // required config
@@ -18,23 +25,62 @@ SwaggerExpress.create(config, function(err, swaggerExpress) {
 
   var port = process.env.PORT || 10010;
   app.listen(port);
-
-  // if (swaggerExpress.runner.swagger.paths['/hello']) {
-  //   console.log('try this:\ncurl http://127.0.0.1:' + port + '/hello?name=Scott');
-  // }
 });
 
 app.use(cors());
 
-GLOBAL.knex = require('knex')({
-  client: 'sqlite3',
-  connection: {
-    filename: "./db.sqlite"
-  },
-  // useNullAsDefault: true,
-  debug: true
-});
+if (process.env.DEV) {
+  GLOBAL.knex = require('knex')({
+    client: 'sqlite3',
+    connection: {
+      filename: "./db.sqlite"
+    },
+    // useNullAsDefault: true,
+    debug: true
+  });
+} else if (process.env.JAWSDB_URL) {
+  GLOBAL.knex = require('knex')({
+    client: 'mysql',
+    connection: process.env.JAWSDB_URL,
+    // useNullAsDefault: true,
+    debug: true
+  });
+} else if (process.env.JAWSDB_MARIA_URL) {
+  GLOBAL.knex = require('knex')({
+    client: 'mysql',
+    connection: process.env.JAWSDB_MARIA_URL,
+    searchPath: 'knex,public',
+    // useNullAsDefault: true,
+    debug: true
+  });
+} else if (process.env.CLEARDB_DATABASE_URL) {
+  GLOBAL.knex = require('knex')({
+    client: 'mysql',
+    connection: process.env.CLEARDB_DATABASE_URL,
+    searchPath: 'knex,public',
+    // useNullAsDefault: true,
+    debug: true
+  });
+} else {
+  GLOBAL.knex = require('knex')({
+    client: 'pg',
+    connection: process.env.DATABASE_URL,
+    searchPath: 'knex,public',
+    // useNullAsDefault: true,
+    debug: true
+  });
+}
 
-var tables = require('./api/helpers/sql/tables');
-tables.dropAllTables(knex);
-tables.createAllTables(knex);
+var prepareQuery = Promise.resolve(true);
+if (process.env.DROP_TABLES) {
+  prepareQuery = prepareQuery.then(data => tables.dropAllTables(knex))
+                             .then(data => tables.createAllTables(knex))                               
+                             .then(data => tables.fillWithTestData(knex))
+} else {
+  prepareQuery = prepareQuery.then(data => tables.createAllTables(knex));
+}
+
+Date.prototype.addMinutes = function(minutes) {
+  var copiedDate = new Date(this.getTime());
+  return new Date(copiedDate.getTime() + minutes * 60000);
+}
