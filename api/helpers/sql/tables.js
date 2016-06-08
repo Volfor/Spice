@@ -160,6 +160,22 @@ function get_with_id(table, id) {
   return query.then(data => without_nulls(data, true));
 }
 
+function get_object_with_images(table, id) {
+  var query;
+
+  if (id) {
+    query = knex.first().where("id", id).from(table.name);
+
+    var subquery = knex.select("image_id").from(T.image_object.name).where("object_id", id);
+    var queryImages = knex.select().from(T.images.name).whereIn("id", subquery);
+    
+    query.images = queryImages;
+  } else {
+    query = knex.select().from(table.name);
+  }
+  return query.then(data => without_nulls(data, true));
+}
+
 function get_child(parentTable, childTable, id) {
   var query;
       if (id) {
@@ -230,7 +246,8 @@ function remove_with_id(parentTable, childTable, id) {
                 .where(childTable.name + ".id", id)
                 .then(() => knex.del()
                                 .from(parentTable.name)
-                                .where(parentTable.name + ".id", id));
+                                .where(parentTable.name + ".id", id))
+                .then(T.image_object.removeAll(id));
   } else {
     query = knex.del()
                 .from(childTable.name)
@@ -251,7 +268,8 @@ function remove_planetoid(parentTable, planetoidTable, childTable, id) {
                                 .where(planetoidTable.name + ".id", id)
                                 .then(() => knex.del()
                                                 .from(parentTable.name)
-                                                .where(parentTable.name + ".id", id)));
+                                                .where(parentTable.name + ".id", id)))
+                .then(T.image_object.removeAll(id));
   } else {
     query = knex.del()
                 .from(childTable.name)
@@ -299,12 +317,11 @@ var T = {
 
       table.timestamps();       
     },
-    get: id => get_with_id(T.celestial_objects, id),    
+    get: id => get_object_with_images(T.celestial_objects, id),    
   },
   images: {
     name: "Images",
     fields: ["id", "spectrum", "shooting_date", "author", "telescope", "url"],
-
     init: table => {
       table.increments("id");
       table.float("spectrum");
@@ -315,6 +332,34 @@ var T = {
 
       table.timestamps();
     },    
+    get: id => get_with_id(T.images, id),
+    new: (image, objectId) => {
+      var imageId_;
+      return knex.insert(image)
+                 .into(T.images.name)             
+                 .then(ids => {
+                    imageId_ = ids[0];
+                    return T.images.get(ids[0])
+                  })
+                 .then(data => without_nulls(data, true))
+                 .then(() => {                   
+                   var objectId_ = objectId;                                  
+                   return knex.insert({image_id: imageId_, object_id: objectId_})
+                              .into(T.image_object.name) 
+                              .then(() => T.image_object.get(imageId_, objectId_))
+                              .then(data => without_nulls(data, true))
+                 });             
+    },
+    update: image => knex.where(T.images.name + ".id", image.id)
+                         .update(without_nulls(take_fields(image, T.images.fields)))
+                         .table(T.images.name)
+                         .then(affectedRows => T.images.get(image.id))
+                         .then(data => without_nulls(data, true)),
+    remove: id => knex.del()
+                      .from(T.images.name)
+                      .where(T.images.name + ".id", id)
+                      .then(affectedRows => ({"message": "success"}))
+                      .then(T.image_object.removeAll(id)),
   },
   image_object: {
     name: "Image_Object",
@@ -331,6 +376,41 @@ var T = {
 
       table.primary(["image_id", "object_id"]);
     },
+    get: (image_id, object_id) => {
+      var query;
+      if (image_id && object_id) {
+        query = knex.first().where("image_id", image_id).andWhere("object_id", object_id).from(T.image_object.name);
+      } else {
+        query = knex.select().from(T.image_object.name);
+      }
+      return query.then(data => without_nulls(data, true));
+    },
+    new: (objectId, imageId) => {   
+      var objectId_ = objectId.object_id;
+      objectId.image_id = imageId;
+      return knex.insert(objectId)
+                 .into(T.image_object.name)
+                 .then(() => T.image_object.get(imageId, objectId_))
+                 .then(data => without_nulls(data, true));
+    },
+    removeAll: (objectId, imageId) => {
+      var query;
+      if (objectId) {
+        query = knex.del()
+                    .from(T.image_object.name)
+                    .where(T.image_object.name + ".object_id", objectId);
+      } else if (imageId) {
+        query = knex.del()
+                    .from(T.image_object.name)
+                    .where(T.image_object.name + ".image_id", imageId);                    
+      }
+      return query.then(affectedRows => ({"message": "success"}));
+    },
+    remove: (objectId, imageId) => knex.del()
+                                       .from(T.image_object.name)
+                                       .where(T.image_object.name + ".image_id", imageId)
+                                       .andWhere(T.image_object.name + ".object_id", objectId)
+                                       .then(affectedRows => ({"message": "success"})),
   },
   constellations: {
     name: "Constellations",
@@ -387,7 +467,7 @@ var T = {
       return update_child(T.celestial_objects, T.stars, constellationId, star, baseFields, childFields_);
     },
     get: (constellationId, starId) => get_child_from(T.celestial_objects, T.stars, "constellation_id", constellationId, starId),
-    remove: id =>  remove_with_id(T.celestial_objects, T.stars, id),
+    remove: id => remove_with_id(T.celestial_objects, T.stars, id),
   },
   nebulas: {
     name: "Nebulas",

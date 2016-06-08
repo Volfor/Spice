@@ -19,6 +19,20 @@ produces:
 ## Cross-request parameters
 
 parameters:
+  objectIdParam:
+    in: path
+    name: objectId
+    description: ID of the object to operate with.
+    required: true
+    type: integer
+    format: int64
+  imageIdParam:
+    in: path
+    name: imageId
+    description: ID of the image to operate with.
+    required: true
+    type: integer
+    format: int64
   constellationIdParam:
     in: path
     name: constellationId
@@ -109,6 +123,149 @@ paths:
             type: array
             items:
               $ref: "#/definitions/CelestialObject"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /images:
+    x-swagger-router-controller: objects
+    get:
+      operationId: listImages
+      description: |
+        Gets all images available in catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Image"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /image-object:
+    x-swagger-router-controller: objects
+    get:
+      operationId: listImageObject
+      description: |
+        Gets all image-object available in catalog.
+      responses:
+        "200":
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Image_Object"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/{objectId}:
+    x-swagger-router-controller: objects
+    parameters:
+      - $ref: "#/parameters/objectIdParam"
+    post:
+      tags:
+        - image
+      operationId: addImage
+      description: |
+        Adds an image of object.
+      parameters:
+        - in: body
+          name: image
+          description: The image to add.
+          required: true
+          schema:
+            $ref: "#/definitions/Image"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Image"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /images/{imageId}:
+    x-swagger-router-controller: objects
+    parameters:
+      - $ref: "#/parameters/imageIdParam"
+    post:
+      tags:
+        - image
+      operationId: addObjectToImage
+      description: | 
+        Adds an object to image.
+      parameters:
+        - in: body
+          name: objectId
+          description: The object id to add.
+          required: true
+          schema:
+            $ref: "#/definitions/Image_Object"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Image_Object"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    patch:
+      tags:
+        - image
+      operationId: updateImage
+      description: |
+        Updates an image with a new data.
+      parameters:
+        - in: body
+          name: image
+          description: The updated image.
+          required: true
+          schema:
+            $ref: "#/definitions/Image"
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Image"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+    delete:
+      tags:
+        - image
+      operationId: deleteImage
+      description: |
+        Deletes an image.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+  /objects/{objectId}/images/{imageId}:
+    x-swagger-router-controller: objects
+    parameters:
+      - $ref: "#/parameters/objectIdParam"
+      - $ref: "#/parameters/imageIdParam"
+    delete:
+      tags:
+        - image
+      operationId: deleteImageObject
+      description: |
+        Deletes an image object relation.
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: "#/definitions/Success"
         default:
           description: Error
           schema:
@@ -1287,6 +1444,41 @@ paths:
 ## Data classes
 
 definitions:
+  Image: 
+    type: object
+    properties:
+      id:
+        type: integer
+        description: Unique image identifier.
+      spectrum:
+        type: integer
+        description: Spectrum of the image.
+      shooting_date:
+        type: string 
+        format: date
+        description: Image shooting date.
+      author:
+        type: string
+        description: Author of the image.
+      telescope:
+        type: string
+        description: Telescope on which image was shot.
+      url:
+        type: string
+        description: Link to the image.
+      # objects:
+      #   type: array
+      #   items:
+      #     type: integer
+  Image_Object: 
+    type: object
+    properties:
+      image_id:
+        type: integer
+        description: Unique image identifier.
+      object_id:
+        type: integer
+        description: Unique object identifier.
   CelestialObject:
     type: object
     properties:
@@ -1296,6 +1488,10 @@ definitions:
       name:
         type: string
         description: Object name.
+      images:
+        type: array
+        items:
+          $ref: "#/definitions/Image"
       discoverer:
         type: string
         description: Discoverer of the object.
